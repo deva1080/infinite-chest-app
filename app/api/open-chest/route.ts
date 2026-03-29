@@ -134,6 +134,7 @@ export async function POST(request: Request) {
 
     const baseTx = {
       account,
+      chain: base,
       address: contractAddresses.InfiniteChest,
       abi: contractAbis.InfiniteChest,
       maxPriorityFeePerGas,
