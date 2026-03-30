@@ -83,7 +83,7 @@ export default function Home() {
 
                 <div className="relative mb-4 h-36 overflow-hidden rounded-xl border border-cyan-300/30 bg-gradient-to-b from-indigo-950/80 to-purple-950/80">
                   <Image
-                    src={`/chesties/${chestImageIndex}.png`}
+                    src={`/chesties/${chestImageIndex}.webp`}
                     alt={`Chest ${id}`}
                     fill
                     className="scale-125 object-contain"

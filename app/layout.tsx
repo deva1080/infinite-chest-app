@@ -38,7 +38,7 @@ export default function RootLayout({
               <Navbar />
               <RecentOpenings />
               <QuickInventoryPanel />
-              <main className="container mx-auto max-w-5xl px-4 py-8">
+              <main className="mx-auto w-full max-w-5xl py-8 pr-4 pl-[7.5rem] sm:pr-6 sm:pl-[10rem]">
                 {children}
               </main>
             </ClientProviders>
