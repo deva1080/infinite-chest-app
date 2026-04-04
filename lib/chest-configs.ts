@@ -13,7 +13,7 @@ export type LocalChestConfig = {
   sellPrices: bigint[];
 };
 
-const MULTIPLIER_BASE = 10_000n;
+const MULTIPLIER_BASE = BigInt(10_000);
 
 function buildConfig(raw: (typeof rawConfigs)[number]): LocalChestConfig {
   const price = BigInt(raw.price);
@@ -101,7 +101,7 @@ export function computeBatchLoot(
   totalValue: bigint;
 } {
   const cfg = byId.get(configId);
-  if (!cfg) return { items: [], totalValue: 0n };
+  if (!cfg) return { items: [], totalValue: BigInt(0) };
 
   const countMap = new Map<number, number>();
   for (const idx of rolledIndexes) {
@@ -109,19 +109,19 @@ export function computeBatchLoot(
     countMap.set(i, (countMap.get(i) ?? 0) + 1);
   }
 
-  let totalValue = 0n;
+  let totalValue = BigInt(0);
   const items: { tokenId: bigint; count: number; sellPrice: bigint; dropPct: number }[] = [];
 
   const sortedEntries = [...countMap.entries()].sort((a, b) => {
-    const priceA = cfg.sellPrices[a[0]] ?? 0n;
-    const priceB = cfg.sellPrices[b[0]] ?? 0n;
+    const priceA = cfg.sellPrices[a[0]] ?? BigInt(0);
+    const priceB = cfg.sellPrices[b[0]] ?? BigInt(0);
     if (priceA !== priceB) return priceA > priceB ? -1 : 1;
     return b[1] - a[1];
   });
 
   for (const [idx, count] of sortedEntries) {
-    const tokenId = cfg.tokenIds[idx] ?? 0n;
-    const sellPrice = cfg.sellPrices[idx] ?? 0n;
+    const tokenId = cfg.tokenIds[idx] ?? BigInt(0);
+    const sellPrice = cfg.sellPrices[idx] ?? BigInt(0);
     const dropPct = cfg.dropPercentages[idx] ?? 0;
     totalValue += sellPrice * BigInt(count);
     items.push({ tokenId, count, sellPrice, dropPct });
