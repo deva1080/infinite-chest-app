@@ -19,6 +19,17 @@ const fallbackRpcUrl =
 const rpcTimeoutMs = Number(process.env.RELAYER_RPC_TIMEOUT_MS ?? "1200");
 const gasBumpPercent = BigInt(process.env.RELAYER_GAS_BUMP_PERCENT ?? "2");
 const feeCacheTtlMs = Number(process.env.RELAYER_FEES_CACHE_TTL_MS ?? "1500");
+const MAX_BATCH = 50;
+const singleOpenGasLimit = BigInt(process.env.RELAYER_GAS_LIMIT_SINGLE ?? "500000");
+const batchGasBase = BigInt(process.env.RELAYER_GAS_LIMIT_BATCH_BASE ?? "1800000");
+const batchGasPerOpen = BigInt(process.env.RELAYER_GAS_LIMIT_BATCH_PER_OPEN ?? "300000");
+const batchGasAutoSellExtra = BigInt(
+  process.env.RELAYER_GAS_LIMIT_BATCH_AUTOSELL_EXTRA ?? "600000",
+);
+const batchGasBonusHeadroom = BigInt(
+  process.env.RELAYER_GAS_LIMIT_BATCH_BONUS_HEADROOM ?? "2500000",
+);
+const batchGasCap = BigInt(process.env.RELAYER_GAS_LIMIT_BATCH_CAP ?? "12000000");
 
 const defaultPriorityFeePerGas = parseGwei("0.01");
 const defaultGasPrice = parseGwei("0.02");
@@ -89,6 +100,18 @@ async function estimateFeesWithFallback() {
   }
 }
 
+function computeFixedGasLimit(openAmount: number, isBatch: boolean, autoSell: boolean) {
+  if (!isBatch) return singleOpenGasLimit;
+
+  let gas =
+    batchGasBase +
+    batchGasPerOpen * BigInt(openAmount) +
+    batchGasBonusHeadroom;
+  if (autoSell) gas += batchGasAutoSellExtra;
+  if (gas > batchGasCap) gas = batchGasCap;
+  return gas;
+}
+
 async function getBumpedFees(): Promise<RelayerFees> {
   const now = Date.now();
   if (cachedFees && now - cachedFeesAt < feeCacheTtlMs) {
@@ -113,10 +136,12 @@ async function getBumpedFees(): Promise<RelayerFees> {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { configId, userAddress, referrer } = body as {
+    const { configId, userAddress, referrer, amount, autoSell } = body as {
       configId: number;
       userAddress: string;
       referrer?: string;
+      amount?: number;
+      autoSell?: boolean;
     };
 
     if (configId === undefined || configId === null) {
@@ -127,6 +152,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid userAddress" }, { status: 400 });
     }
 
+    const openAmount = Number.isInteger(amount) ? Number(amount) : 1;
+    if (openAmount < 1 || openAmount > MAX_BATCH) {
+      return NextResponse.json(
+        { error: `amount must be between 1 and ${MAX_BATCH}` },
+        { status: 400 },
+      );
+    }
+
+    const openWithAutoSell = Boolean(autoSell);
     const validReferrer = referrer && isAddress(referrer) ? referrer : null;
 
     const account = getRelayerAccountCached();
@@ -141,31 +175,62 @@ export async function POST(request: Request) {
       maxFeePerGas,
     } as const;
 
-    const txParams = validReferrer
-      ? ({
-          ...baseTx,
-          functionName: "openAndSetReferrer" as const,
-          args: [configId, userAddress as Address, validReferrer as Address],
-        } as const)
-      : ({
-          ...baseTx,
-          functionName: "open" as const,
-          args: [configId, userAddress as Address],
-        } as const);
+    const isBatch = openAmount > 1 || openWithAutoSell;
+    const txParams =
+      openAmount > 1 || openWithAutoSell
+        ? ({
+            ...baseTx,
+            functionName: "openBatch" as const,
+            args: [configId, userAddress as Address, openAmount, openWithAutoSell],
+          } as const)
+        : validReferrer
+          ? ({
+              ...baseTx,
+              functionName: "openAndSetReferrer" as const,
+              args: [configId, userAddress as Address, validReferrer as Address],
+            } as const)
+          : ({
+              ...baseTx,
+              functionName: "open" as const,
+              args: [configId, userAddress as Address],
+            } as const);
+
+    const gas = computeFixedGasLimit(openAmount, isBatch, openWithAutoSell);
+    const txParamsWithGas = { ...txParams, gas } as const;
 
     let hash: `0x${string}`;
     try {
-      hash = await getPrimaryWalletClient().writeContract(txParams);
+      hash = await getPrimaryWalletClient().writeContract(txParamsWithGas);
     } catch (primaryError) {
       const fallbackWalletClient = getFallbackWalletClient();
       if (!fallbackWalletClient) throw primaryError;
-      hash = await fallbackWalletClient.writeContract(txParams);
+      hash = await fallbackWalletClient.writeContract(txParamsWithGas);
     }
 
-    return NextResponse.json({ hash });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown server error";
-    console.error("open-chest error:", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({
+      hash,
+      mode: openAmount > 1 || openWithAutoSell ? "batch" : "single",
+      amount: openAmount,
+      autoSell: openWithAutoSell,
+    });
+  } catch (err: unknown) {
+    const viemError = err as {
+      shortMessage?: string;
+      details?: string;
+      cause?: { reason?: string; shortMessage?: string; data?: { errorName?: string } };
+      message?: string;
+    };
+
+    const reason =
+      viemError.cause?.reason ??
+      viemError.cause?.data?.errorName ??
+      viemError.cause?.shortMessage ??
+      viemError.shortMessage ??
+      viemError.details ??
+      viemError.message ??
+      "Unknown server error";
+
+    console.error("open-chest error:", reason, viemError);
+    return NextResponse.json({ error: reason }, { status: 500 });
   }
 }

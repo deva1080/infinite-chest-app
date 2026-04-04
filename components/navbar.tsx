@@ -4,14 +4,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useReadContract } from "wagmi";
+import { useEffect } from "react";
 
 import { getContractConfig } from "@/lib/contracts";
 import { formatKeys } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { useAppStore } from "@/lib/store/app-store";
 
 const links = [
   { href: "/", label: "Home" },
-  // { href: "/game", label: "Play" },
   { href: "/collections", label: "Collections" },
   { href: "/referrals", label: "Referrals" },
 ] as const;
@@ -19,9 +20,10 @@ const links = [
 export function Navbar() {
   const pathname = usePathname();
   const { address, isConnected } = useAccount();
+  const balanceNonce = useAppStore((s) => s.balanceNonce);
 
   const keyConfig = getContractConfig("Key");
-  const { data: keyBalance } = useReadContract({
+  const { data: keyBalance, refetch: refetchBalance } = useReadContract({
     ...keyConfig,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
@@ -32,6 +34,12 @@ export function Navbar() {
       refetchOnWindowFocus: false,
     },
   });
+
+  useEffect(() => {
+    if (balanceNonce > 0) {
+      refetchBalance();
+    }
+  }, [balanceNonce, refetchBalance]);
 
   return (
     <header className="sticky top-0 z-50 h-16 border-b border-white/15 bg-black/55 backdrop-blur-md">

@@ -13,46 +13,21 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getContractConfig, contractAddresses } from "@/lib/contracts";
-import { normalizeChestConfig } from "@/lib/contracts/chest-config";
 import { formatKeys } from "@/lib/format";
+import {
+  getTokenDisplayName,
+  getTokenImageFromCatalog,
+  isBonusTokenId,
+} from "@/lib/item-catalog";
+import { getAllLocalConfigs } from "@/lib/chest-configs";
+
+const localConfigs = getAllLocalConfigs();
 
 export default function CollectionsPage() {
   const { address, isConnected } = useAccount();
 
-  const chestConfig = getContractConfig("InfiniteChest");
   const itemsConfig = getContractConfig("CrateGameItems");
   const shopConfig = getContractConfig("Shop");
-
-  const { data: configCount } = useReadContract({
-    ...chestConfig,
-    functionName: "configCount",
-    query: { staleTime: 60_000, retry: 1, refetchOnWindowFocus: false },
-  });
-
-  const count = configCount !== undefined ? Number(configCount) : 0;
-  const configIds = Array.from({ length: count }, (_, i) => i);
-
-  const { data: configs } = useReadContracts({
-    contracts: configIds.map((id) => ({
-      ...chestConfig,
-      functionName: "getConfig" as const,
-      args: [id],
-    })),
-    query: {
-      enabled: count > 0,
-      staleTime: 60_000,
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  });
-
-  const configTokenIds: bigint[][] = [];
-  for (let i = 0; i < count; i++) {
-    const normalized = normalizeChestConfig(configs?.[i]?.result);
-    configTokenIds.push(normalized.tokenIds);
-  }
-
-  const allTokenIds = configTokenIds.flat();
 
   const { data: ownedIds, refetch: refetchOwned } = useReadContract({
     ...itemsConfig,
@@ -92,30 +67,6 @@ export default function CollectionsPage() {
       const val = balances[i]?.result;
       if (val != null) {
         balanceMap.set(ownedIdsList[i].toString(), val as bigint);
-      }
-    }
-  }
-
-  const { data: prices } = useReadContracts({
-    contracts: allTokenIds.map((tid) => ({
-      ...shopConfig,
-      functionName: "tokenPrice" as const,
-      args: [tid],
-    })),
-    query: {
-      enabled: allTokenIds.length > 0,
-      staleTime: 60_000,
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  });
-
-  const priceMap = new Map<string, bigint>();
-  if (prices) {
-    for (let i = 0; i < allTokenIds.length; i++) {
-      const val = prices[i]?.result;
-      if (val != null) {
-        priceMap.set(allTokenIds[i].toString(), val as bigint);
       }
     }
   }
@@ -210,15 +161,17 @@ export default function CollectionsPage() {
         </Button>
       )}
 
-      {isConnected && count === 0 && (
+      {isConnected && localConfigs.length === 0 && (
         <p className="text-sm text-muted-foreground">
           No hay cofres configurados aun.
         </p>
       )}
 
       {isConnected &&
-        configIds.map((cfgId) => {
-          const tokenIds = configTokenIds[cfgId] ?? [];
+        localConfigs.map((cfg) => {
+          const cfgId = cfg.configId;
+          const tokenIds = cfg.tokenIds;
+          const sellPrices = cfg.sellPrices;
 
           return (
             <section key={cfgId} className="space-y-3">
@@ -226,27 +179,39 @@ export default function CollectionsPage() {
 
               {tokenIds.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  Cargando IDs de esta coleccion...
+                  Sin drops en esta coleccion.
                 </p>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                  {tokenIds.map((tid) => {
+                  {tokenIds.map((tid, i) => {
                     const bal = balanceMap.get(tid.toString());
                     const hasToken = ownedSet.has(tid.toString()) && bal !== undefined && bal > BigInt(0);
-                    const price = priceMap.get(tid.toString());
+                    const price = sellPrices[i];
+                    const isBonus = isBonusTokenId(tid);
 
                     return (
                       <Card key={tid.toString()} className="overflow-hidden">
                         <div className="relative">
                           <img
-                            src={`/collections/${cfgId}_${tid.toString()}.webp`}
+                            src={getTokenImageFromCatalog(tid, cfgId)}
                             alt={`NFT ${tid.toString()}`}
+                            onError={(e) => {
+                              const target = e.currentTarget;
+                              if (!target.src.endsWith("/collections/0_1.webp")) {
+                                target.src = "/collections/0_1.webp";
+                              }
+                            }}
                             className={
                               hasToken
                                 ? "aspect-square w-full object-cover"
                                 : "aspect-square w-full object-cover grayscale blur-[1.5px] opacity-50"
                             }
                           />
+                          {isBonus && (
+                            <span className="absolute top-1.5 left-1.5 rounded-md bg-amber-500/90 px-2 py-0.5 text-[10px] font-semibold text-black">
+                              BONUS
+                            </span>
+                          )}
                           {hasToken && (
                             <span className="absolute top-1.5 right-1.5 rounded-md bg-emerald-600/90 px-2 py-0.5 text-xs font-semibold text-white">
                               x{bal.toString()}
@@ -254,9 +219,14 @@ export default function CollectionsPage() {
                           )}
                         </div>
                         <div className="flex items-center justify-between px-2.5 py-2">
-                          <span className="text-xs text-muted-foreground">
-                            {price ? `${formatKeys(price)} KEY` : "-"}
-                          </span>
+                          <div className="flex flex-col">
+                            <span className="max-w-[100px] truncate text-[11px] font-semibold">
+                              {getTokenDisplayName(tid)}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {price ? `${formatKeys(price)} KEY` : "-"}
+                            </span>
+                          </div>
                           {hasToken && (
                             <Button
                               size="sm"

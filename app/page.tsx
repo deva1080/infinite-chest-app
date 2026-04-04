@@ -2,39 +2,18 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useAccount, useReadContract, useReadContracts } from "wagmi";
+import { useAccount } from "wagmi";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { getContractConfig } from "@/lib/contracts";
-import { normalizeChestConfig } from "@/lib/contracts/chest-config";
+import { TokenImage } from "@/components/token-image";
+import { getTokenImageFromCatalog, isBonusTokenId } from "@/lib/item-catalog";
+import { getAllLocalConfigs } from "@/lib/chest-configs";
+
+const configs = getAllLocalConfigs();
 
 export default function Home() {
   const { isConnected } = useAccount();
-  const chestConfig = getContractConfig("InfiniteChest");
-
-  const { data: configCount } = useReadContract({
-    ...chestConfig,
-    functionName: "configCount",
-    query: { staleTime: 60_000, retry: 1, refetchOnWindowFocus: false },
-  });
-
-  const count = configCount !== undefined ? Number(configCount) : 0;
-  const configIds = Array.from({ length: count }, (_, i) => i);
-
-  const { data: configs } = useReadContracts({
-    contracts: configIds.map((id) => ({
-      ...chestConfig,
-      functionName: "getConfig" as const,
-      args: [id],
-    })),
-    query: {
-      enabled: count > 0,
-      staleTime: 60_000,
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  });
 
   return (
     <div className="flex flex-col gap-8">
@@ -54,16 +33,18 @@ export default function Home() {
         </Alert>
       )}
 
-      {count === 0 ? (
+      {configs.length === 0 ? (
         <p className="text-sm text-white/75">
           No hay cofres configurados aun.
         </p>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {configIds.map((id) => {
-            const normalized = normalizeChestConfig(configs?.[id]?.result);
-            const tokenIds = normalized.tokenIds;
-            const chestImageIndex = id % 9;
+          {configs.map((cfg) => {
+            const id = cfg.configId;
+            const tokenIds = cfg.tokenIds;
+            const chestImageIndex = id % 5;
+            const bonusTokenIds = tokenIds.filter((tid) => isBonusTokenId(tid));
+            const dropTokenIds = tokenIds.filter((tid) => !isBonusTokenId(tid));
 
             return (
               <article
@@ -75,9 +56,9 @@ export default function Home() {
                     Cyber Core #{id}
                   </h2>
                   <p className="text-xs text-white/70">
-                    {tokenIds.length > 0
-                      ? `${tokenIds.length} drops posibles`
-                      : "Cargando drops..."}
+                    {dropTokenIds.length > 0
+                      ? `${dropTokenIds.length} drops + ${bonusTokenIds.length} bonus`
+                      : "Sin drops"}
                   </p>
                 </div>
 
@@ -96,10 +77,14 @@ export default function Home() {
                     tokenIds.map((tokenId) => (
                       <div
                         key={tokenId.toString()}
-                        className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md border border-white/20 bg-black/30"
+                        className={`relative h-10 w-10 shrink-0 overflow-hidden rounded-md border ${
+                          isBonusTokenId(tokenId)
+                            ? "border-amber-300/60 bg-amber-400/20"
+                            : "border-white/20 bg-black/30"
+                        }`}
                       >
-                        <Image
-                          src={`/collections/${id}_${tokenId.toString()}.webp`}
+                        <TokenImage
+                          src={getTokenImageFromCatalog(tokenId, id)}
                           alt={`Drop ${tokenId.toString()}`}
                           fill
                           className="object-cover"

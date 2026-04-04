@@ -1,6 +1,7 @@
 import type { Abi } from "viem";
 
 import crateGameItemsAbiJson from "@/public/ABIS/CrateGameItems.json";
+import burnCollectionVaultAbiJson from "@/public/ABIS/BurnCollectionVault.json";
 import epicKeyAbiJson from "@/public/ABIS/EpicKey.json";
 import infiniteChestAbiJson from "@/public/ABIS/InfiniteChest.json";
 import keyAbiJson from "@/public/ABIS/Key.json";
@@ -14,6 +15,7 @@ export const contractAbis = {
   Shop: shopAbiJson as Abi,
   Treasury: treasuryAbiJson as Abi,
   CrateGameItems: crateGameItemsAbiJson as Abi,
+  BurnCollectionVault: burnCollectionVaultAbiJson as Abi,
   EpicKey: epicKeyAbiJson as Abi,
   Key: keyAbiJson as Abi,
   RareKey: rareKeyAbiJson as Abi,

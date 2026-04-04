@@ -23,12 +23,19 @@ contract UserStats is Ownable {
     event UserChestsIncremented(address indexed user, uint256 amount, uint256 totalChestsOpened);
     event ReferrerSet(address indexed user, address indexed referrer);
     event UserOpenRecorded(address indexed user, uint256 keySpent, uint256 totalChestsOpened, uint256 totalKeyIn);
+    event UserOpenBatchRecorded(
+        address indexed user,
+        uint256 opens,
+        uint256 keySpent,
+        uint256 totalChestsOpened,
+        uint256 totalKeyIn
+    );
     event ReferrerRewardRecorded(address indexed referrer, uint256 reward, uint256 totalReward);
 
     constructor() Ownable(msg.sender) {}
 
     modifier onlyPermittedOrOwner() {
-        require(permittedCallers[msg.sender] || msg.sender == owner(), "not permitted");
+        require(permittedCallers[msg.sender] || msg.sender == owner(), "UserStats: not permitted");
         _;
     }
 
@@ -38,7 +45,7 @@ contract UserStats is Ownable {
     }
 
     function setMyKey(bytes32 newKey) external {
-        require(newKey != bytes32(0), "invalid key");
+        require(newKey != bytes32(0), "UserStats: invalid key");
 
         UserData storage user = _users[msg.sender];
         user.key = newKey;
@@ -48,8 +55,8 @@ contract UserStats is Ownable {
     }
 
     function incrementChests(address user, uint256 amount) external onlyPermittedOrOwner {
-        require(user != address(0), "invalid user");
-        require(amount > 0, "invalid amount");
+        require(user != address(0), "UserStats: invalid user");
+        require(amount > 0, "UserStats: invalid amount");
 
         _ensureKey(user);
 
@@ -60,12 +67,12 @@ contract UserStats is Ownable {
     }
 
     function setReferrer(address user, address referrer) external onlyPermittedOrOwner {
-        require(user != address(0), "invalid user");
-        require(referrer != address(0), "invalid referrer");
-        require(user != referrer, "self referrer");
+        require(user != address(0), "UserStats: invalid user");
+        require(referrer != address(0), "UserStats: invalid referrer");
+        require(user != referrer, "UserStats: self referrer");
 
         UserData storage userData = _users[user];
-        require(userData.referrer == address(0), "referrer already set");
+        require(userData.referrer == address(0), "UserStats: referrer already set");
 
         userData.referrer = referrer;
         _users[referrer].referredCount += 1;
@@ -74,8 +81,8 @@ contract UserStats is Ownable {
     }
 
     function recordOpen(address user, uint256 keySpent) external onlyPermittedOrOwner {
-        require(user != address(0), "invalid user");
-        require(keySpent > 0, "invalid key amount");
+        require(user != address(0), "UserStats: invalid user");
+        require(keySpent > 0, "UserStats: invalid key amount");
 
         _ensureKey(user);
 
@@ -86,9 +93,23 @@ contract UserStats is Ownable {
         emit UserOpenRecorded(user, keySpent, userData.totalChestsOpened, userData.keyIn);
     }
 
+    function recordOpenBatch(address user, uint256 opens, uint256 keySpent) external onlyPermittedOrOwner {
+        require(user != address(0), "UserStats: invalid user");
+        require(opens > 0, "UserStats: invalid opens");
+        require(keySpent > 0, "UserStats: invalid key amount");
+
+        _ensureKey(user);
+
+        UserData storage userData = _users[user];
+        userData.totalChestsOpened += opens;
+        userData.keyIn += keySpent;
+
+        emit UserOpenBatchRecorded(user, opens, keySpent, userData.totalChestsOpened, userData.keyIn);
+    }
+
     function recordReferrerReward(address referrer, uint256 reward) external onlyPermittedOrOwner {
-        require(referrer != address(0), "invalid referrer");
-        require(reward > 0, "invalid reward");
+        require(referrer != address(0), "UserStats: invalid referrer");
+        require(reward > 0, "UserStats: invalid reward");
 
         UserData storage referrerData = _users[referrer];
         referrerData.referrerReward += reward;
@@ -101,7 +122,7 @@ contract UserStats is Ownable {
     }
 
     function ensureUserKey(address user) external onlyPermittedOrOwner returns (bytes32 key) {
-        require(user != address(0), "invalid user");
+        require(user != address(0), "UserStats: invalid user");
         key = _ensureKey(user);
     }
 

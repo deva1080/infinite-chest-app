@@ -31,7 +31,7 @@ contract Treasury is Ownable {
     event Withdrawn(address indexed caller, address indexed to, address indexed token, uint256 amount);
 
     modifier onlyPermitted() {
-        require(permittedAddress[msg.sender] || msg.sender == owner(), "not permitted");
+        require(permittedAddress[msg.sender] || msg.sender == owner(), "Treasury: not permitted");
         _;
     }
 
@@ -40,18 +40,19 @@ contract Treasury is Ownable {
         emit PermittedAddressSet(msg.sender, true);
     }
 
-    function setPermittedAddress(address account, bool allowed) external onlyPermitted {
+    function setPermittedAddress(address account, bool allowed) external onlyOwner {
         permittedAddress[account] = allowed;
         emit PermittedAddressSet(account, allowed);
     }
 
-    function setUserStats(address userStats_) external onlyPermitted {
+    function setUserStats(address userStats_) external onlyOwner {
+        require(userStats_ != address(0), "Treasury: invalid userStats");
         userStats = userStats_;
         emit UserStatsSet(userStats_);
     }
 
     function setReferralRewardBps(uint16 newBps) external onlyPermitted {
-        require(newBps <= BP_VALUE, "invalid bps");
+        require(newBps <= BP_VALUE, "Treasury: invalid bps");
         uint16 previousBps = referralRewardBps;
         referralRewardBps = newBps;
         emit ReferralRewardBpsSet(previousBps, newBps);

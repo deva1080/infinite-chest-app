@@ -20,6 +20,11 @@ contract CrateGameItems is ERC1155, Ownable {
         _mint(to, id, amount, "");
     }
 
+    function mintBatch(address to, uint256[] calldata ids, uint256[] calldata amounts) external {
+        require(msg.sender == minter, "not minter");
+        _mintBatch(to, ids, amounts, "");
+    }
+
     function ownerMint(address to, uint256 id, uint256 amount) external onlyOwner {
         _mint(to, id, amount, "");
     }
@@ -30,6 +35,11 @@ contract CrateGameItems is ERC1155, Ownable {
 
     function setURI(string calldata newURI) external onlyOwner {
         _setURI(newURI);
+    }
+
+    function burnBatchFrom(address from, uint256[] calldata ids, uint256[] calldata amounts) external {
+        require(from == msg.sender || isApprovedForAll(from, msg.sender), "not approved to burn");
+        _burnBatch(from, ids, amounts);
     }
 
     function ownedIds(address user) external view returns (uint256[] memory ids) {
