@@ -1,7 +1,8 @@
 import { getAllLocalConfigs, inferConfigIdFromToken } from "./chest-configs";
-
-const BONUS_ID_BASE = 10_000_000_000;
-const BONUS_ID_COUNT = 25;
+import {
+  getBonusMeta,
+  isBonusTokenId as isGlobalBonusTokenId,
+} from "./bonus-catalog";
 
 function toNumericTokenId(tokenId: bigint | number | string): number {
   if (typeof tokenId === "bigint") return Number(tokenId);
@@ -15,27 +16,16 @@ for (const cfg of getAllLocalConfigs()) {
 }
 
 export function isBonusTokenId(tokenId: bigint | number | string): boolean {
-  const numeric = toNumericTokenId(tokenId);
-  return (
-    Number.isFinite(numeric) &&
-    numeric >= BONUS_ID_BASE &&
-    numeric < BONUS_ID_BASE + BONUS_ID_COUNT
-  );
-}
-
-function getBonusOpenCount(tokenId: bigint | number | string): number | null {
-  const numeric = toNumericTokenId(tokenId);
-  if (!Number.isFinite(numeric)) return null;
-  if (numeric < BONUS_ID_BASE || numeric >= BONUS_ID_BASE + BONUS_ID_COUNT) return null;
-  return numeric - BONUS_ID_BASE;
+  return isGlobalBonusTokenId(tokenId);
 }
 
 export function getTokenImageFromCatalog(
   tokenId: bigint | number | string,
   fallbackConfigId?: number,
 ): string {
-  if (isBonusTokenId(tokenId)) {
-    return "/collections/0_1.webp";
+  const bonusMeta = getBonusMeta(tokenId);
+  if (bonusMeta) {
+    return bonusMeta.imageSrc;
   }
 
   const numeric = toNumericTokenId(tokenId);
@@ -45,8 +35,8 @@ export function getTokenImageFromCatalog(
 }
 
 export function getTokenDisplayName(tokenId: bigint | number | string): string {
-  const bonusOpens = getBonusOpenCount(tokenId);
-  if (bonusOpens !== null) return `Bonus +${bonusOpens} Opens`;
+  const bonusMeta = getBonusMeta(tokenId);
+  if (bonusMeta) return bonusMeta.label;
 
   const numeric = toNumericTokenId(tokenId);
   return `NFT #${Number.isFinite(numeric) ? numeric : String(tokenId)}`;

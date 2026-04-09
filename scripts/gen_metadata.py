@@ -1,8 +1,8 @@
 """
-Generate a JSON metadata file for each .webp in scripts/collections/.
-Each file: { "name": "<id>", "image": "https://radiant-tanuki-62e7ba.netlify.app/<id>.webp" }
+Generate a JSON metadata file for each .webp in scripts/nftsv2/collections/.
+Each file: { "name": "<id>", "image": "https://radiant-tanuki-62e7ba.netlify.app/collections/<id>.webp" }
 
-Output: scripts/metadata/<id>.json
+Output: scripts/nftsv2/metadata/<hex-id>.json
 
 Usage:
     python scripts/gen_metadata.py
@@ -11,8 +11,9 @@ Usage:
 import json
 from pathlib import Path
 
-COLLECTIONS_DIR = Path(__file__).resolve().parent / "collections"
-OUTPUT_DIR = Path(__file__).resolve().parent / "metadata"
+NFTS_DIR = Path(__file__).resolve().parent / "nftsv2"
+COLLECTIONS_DIR = NFTS_DIR / "collections"
+OUTPUT_DIR = NFTS_DIR / "metadata"
 BASE_URL = "https://radiant-tanuki-62e7ba.netlify.app/collections"
 
 

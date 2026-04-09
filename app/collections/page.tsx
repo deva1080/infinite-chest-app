@@ -12,6 +12,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { RewardArtFrame } from "@/components/reward-art-frame";
 import { getContractConfig, contractAddresses } from "@/lib/contracts";
 import { formatKeys } from "@/lib/format";
 import {
@@ -192,20 +193,11 @@ export default function CollectionsPage() {
                     return (
                       <Card key={tid.toString()} className="overflow-hidden">
                         <div className="relative">
-                          <img
+                          <RewardArtFrame
                             src={getTokenImageFromCatalog(tid, cfgId)}
                             alt={`NFT ${tid.toString()}`}
-                            onError={(e) => {
-                              const target = e.currentTarget;
-                              if (!target.src.endsWith("/collections/0_1.webp")) {
-                                target.src = "/collections/0_1.webp";
-                              }
-                            }}
-                            className={
-                              hasToken
-                                ? "aspect-square w-full object-cover"
-                                : "aspect-square w-full object-cover grayscale blur-[1.5px] opacity-50"
-                            }
+                            isBonus={isBonus}
+                            dimmed={!hasToken}
                           />
                           {isBonus && (
                             <span className="absolute top-1.5 left-1.5 rounded-md bg-amber-500/90 px-2 py-0.5 text-[10px] font-semibold text-black">

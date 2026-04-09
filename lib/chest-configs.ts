@@ -1,7 +1,19 @@
 import rawConfigs from "./chest-configs.json";
 
+export type ChestConfigRarity =
+  | "common"
+  | "rare"
+  | "epic"
+  | "legendary"
+  | "infinite";
+
 export type LocalChestConfig = {
   configId: number;
+  name: string;
+  bonus: boolean;
+  volatility: 0 | 1 | 2 | 3 | 4 | 5;
+  limited: boolean;
+  rarity: ChestConfigRarity;
   token: string;
   price: bigint;
   weights: number[];
@@ -30,6 +42,11 @@ function buildConfig(raw: (typeof rawConfigs)[number]): LocalChestConfig {
 
   return {
     configId: raw.configId,
+    name: raw.name,
+    bonus: raw.bonus,
+    volatility: raw.volatility,
+    limited: raw.limited,
+    rarity: raw.rarity,
     token: raw.token,
     price,
     weights: raw.weights,

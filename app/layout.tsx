@@ -31,14 +31,14 @@ export default function RootLayout({
       lang="en"
       className={`${gemunuLibre.variable} ${gemunuLibre.className}`}
     >
-      <body className="antialiased [--app-header-h:4rem]">
+      <body className="antialiased [--app-header-h:3.5rem]">
         <div className="min-h-screen bg-[url('/bg.jpeg')] bg-cover bg-center bg-fixed">
           <div className="min-h-screen bg-black/45">
             <ClientProviders>
               <Navbar />
               <RecentOpenings />
               <QuickInventoryPanel />
-              <main className="mx-auto w-full max-w-5xl py-8 pr-4 pl-[7.5rem] sm:pr-6 sm:pl-[10rem]">
+              <main className="mx-auto w-full max-w-[92rem] py-6 pr-10 pl-[7.5rem] sm:pr-12 sm:pl-[10rem] xl:pr-16">
                 {children}
               </main>
             </ClientProviders>

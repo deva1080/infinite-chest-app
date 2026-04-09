@@ -351,11 +351,434 @@
       0 0 56px var(--tile-glow, rgba(34, 211, 238, 0.15)) !important;
   }
 
+  /* ===== CHEST CARD — METALLIC FRAME ===== */
+
+  .chest-card {
+    --card-accent: #06b6d4;
+    position: relative;
+  }
+
+  .chest-card-frame {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* Outer metallic gradient border */
+  .chest-card-frame::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2px;
+    background: linear-gradient(
+      175deg,
+      rgba(180, 200, 220, 0.35) 0%,
+      rgba(100, 120, 140, 0.2) 30%,
+      rgba(40, 50, 70, 0.25) 70%,
+      rgba(60, 80, 100, 0.2) 100%
+    );
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  /* Inner accent glow border */
+  .chest-card-frame::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border-radius: calc(inherit - 2px);
+    border: 1px solid var(--card-accent);
+    opacity: 0.25;
+  }
+
+  /* Corner accents */
+  .chest-card-corner {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .chest-card-corner::before,
+  .chest-card-corner::after {
+    content: "";
+    position: absolute;
+    background: var(--card-accent);
+    opacity: 0.4;
+  }
+
+  .chest-card-corner::before {
+    width: 100%;
+    height: 1.5px;
+  }
+
+  .chest-card-corner::after {
+    width: 1.5px;
+    height: 100%;
+  }
+
+  .chest-card-corner.tl {
+    top: 5px;
+    left: 5px;
+  }
+  .chest-card-corner.tr {
+    top: 5px;
+    right: 5px;
+  }
+  .chest-card-corner.tr::before {
+    right: 0;
+  }
+  .chest-card-corner.tr::after {
+    right: 0;
+  }
+  .chest-card-corner.bl {
+    bottom: 5px;
+    left: 5px;
+  }
+  .chest-card-corner.bl::before {
+    bottom: 0;
+  }
+  .chest-card-corner.bl::after {
+    bottom: 0;
+  }
+  .chest-card-corner.br {
+    bottom: 5px;
+    right: 5px;
+  }
+  .chest-card-corner.br::before {
+    right: 0;
+    bottom: 0;
+  }
+  .chest-card-corner.br::after {
+    right: 0;
+    bottom: 0;
+  }
+
+  /* HUD telemetry text */
+  .hud-text {
+    font-size: 7px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    line-height: 1.1;
+    color: var(--card-accent);
+    opacity: 0.3;
+    font-family: monospace;
+  }
+
+  .hud-value {
+    font-size: 8px;
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+    color: var(--card-accent);
+    opacity: 0.45;
+    font-family: monospace;
+    font-weight: 600;
+  }
+
+  /* ===== GAME OPEN ANIMATIONS ===== */
+
+  /* Chest shake/vibrate during charging */
+  @keyframes game-chest-shake {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    10% { transform: translate(-2px, -1px) rotate(-0.5deg); }
+    20% { transform: translate(2px, 1px) rotate(0.5deg); }
+    30% { transform: translate(-3px, 0px) rotate(-0.3deg); }
+    40% { transform: translate(3px, -1px) rotate(0.3deg); }
+    50% { transform: translate(-2px, 1px) rotate(-0.5deg); }
+    60% { transform: translate(2px, 0px) rotate(0.5deg); }
+    70% { transform: translate(-1px, -1px) rotate(-0.3deg); }
+    80% { transform: translate(1px, 1px) rotate(0.3deg); }
+    90% { transform: translate(-1px, 0px) rotate(-0.2deg); }
+  }
+
+  .game-chest-charging {
+    animation: game-chest-shake 0.3s ease-in-out infinite;
+  }
+
+  /* Energy ring expanding from chest center */
+  @keyframes game-energy-ring {
+    0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0.8; }
+    100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+  }
+
+  .game-energy-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 2px solid var(--card-accent, #06b6d4);
+    pointer-events: none;
+    animation: game-energy-ring 1.2s ease-out infinite;
+  }
+
+  /* Chest vanish after receipt */
+  @keyframes game-chest-vanish {
+    0% { transform: scale(1); opacity: 1; filter: brightness(1); }
+    30% { transform: scale(1.1); opacity: 1; filter: brightness(2.5); }
+    100% { transform: scale(0); opacity: 0; filter: brightness(3); }
+  }
+
+  .game-chest-vanish {
+    animation: game-chest-vanish 0.4s ease-in forwards;
+  }
+
+  /* White flash overlay */
+  @keyframes game-flash {
+    0% { opacity: 0.9; }
+    100% { opacity: 0; }
+  }
+
+  .game-flash-overlay {
+    animation: game-flash 0.35s ease-out forwards;
+  }
+
+  /* Loot card reveal — scale in with flash */
+  @keyframes game-loot-reveal {
+    0% { transform: scale(0) rotateY(90deg); opacity: 0; filter: brightness(1); }
+    50% { transform: scale(1.08) rotateY(0deg); opacity: 1; filter: brightness(1.8); }
+    100% { transform: scale(1) rotateY(0deg); opacity: 1; filter: brightness(1); }
+  }
+
+  .game-loot-card-reveal {
+    animation: game-loot-reveal 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  /* Loot card unrevealed (dark placeholder) */
+  .game-loot-card-hidden {
+    transform: scale(0.92);
+    opacity: 0.3;
+  }
+
+  /* FloatingValue is now JS-driven (requestAnimationFrame) — no CSS keyframes needed */
+
+  /* Glow intensify during charging */
+  @keyframes game-glow-intensify {
+    0% { opacity: 0.35; transform: translateX(-50%) scaleX(1); }
+    50% { opacity: 0.9; transform: translateX(-50%) scaleX(1.4); }
+    100% { opacity: 0.35; transform: translateX(-50%) scaleX(1); }
+  }
+
+  .game-glow-intensify {
+    animation: game-glow-intensify 0.8s ease-in-out infinite;
+  }
+
+  /* Loot total — bounce when running total count-up finishes */
+  @keyframes game-total-value-pop {
+    0% { transform: scale(1); }
+    28% { transform: scale(1.14); }
+    52% { transform: scale(0.93); }
+    72% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+
+  .game-total-value-pop {
+    animation: game-total-value-pop 0.72s cubic-bezier(0.34, 1.45, 0.64, 1) both;
+    transform-origin: center center;
+  }
+
+  /* Bonus card golden shimmer border */
+  @keyframes game-bonus-shimmer {
+    0% { border-color: rgba(245, 158, 11, 0.3); box-shadow: 0 0 8px rgba(245,158,11,0.15); }
+    50% { border-color: rgba(245, 158, 11, 0.7); box-shadow: 0 0 20px rgba(245,158,11,0.4); }
+    100% { border-color: rgba(245, 158, 11, 0.3); box-shadow: 0 0 8px rgba(245,158,11,0.15); }
+  }
+
+  .game-bonus-card {
+    animation: game-bonus-shimmer 1.5s ease-in-out infinite;
+    border-color: rgba(245, 158, 11, 0.5) !important;
+  }
+
+  /* Bonus separator enter */
+  @keyframes game-bonus-separator-enter {
+    0% { opacity: 0; transform: scaleX(0.3); }
+    60% { opacity: 1; transform: scaleX(1.02); }
+    100% { opacity: 1; transform: scaleX(1); }
+  }
+
+  .game-bonus-separator-enter {
+    animation: game-bonus-separator-enter 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  }
+
+  /* Bonus separator dot pulse */
+  @keyframes game-bonus-dot-pulse {
+    0%, 100% { opacity: 0.35; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.3); }
+  }
+
+  .game-bonus-dot {
+    animation: game-bonus-dot-pulse 1.2s ease-in-out infinite;
+  }
+
+  /* Bonus phase wrapper golden glow */
+  @keyframes game-bonus-phase-glow {
+    0% { box-shadow: 0 0 12px rgba(245,158,11,0.08), inset 0 0 16px rgba(245,158,11,0.04); }
+    50% { box-shadow: 0 0 22px rgba(245,158,11,0.18), inset 0 0 28px rgba(245,158,11,0.08); }
+    100% { box-shadow: 0 0 12px rgba(245,158,11,0.08), inset 0 0 16px rgba(245,158,11,0.04); }
+  }
+
+  .game-bonus-phase-wrapper {
+    animation: game-bonus-phase-glow 2.5s ease-in-out infinite;
+  }
+
+  /* Cards inside bonus phase get a subtle golden tint */
+  .game-bonus-phase-card {
+    border-color: rgba(245, 158, 11, 0.22) !important;
+  }
+
+  /* Runic backdrop */
+  @keyframes runic-cursor-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  .runic-cursor::after {
+    content: "▌";
+    display: inline;
+    font-size: 0.7em;
+    animation: runic-cursor-blink 0.8s step-end infinite;
+    opacity: 0.6;
+  }
+
+  .runic-glyph-line {
+    filter: blur(0.3px);
+    mix-blend-mode: screen;
+  }
+
   .scrollbar-none {
     scrollbar-width: none;
     -ms-overflow-style: none;
     &::-webkit-scrollbar {
       display: none;
     }
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 2px;
+    }
+  }
+
+  .home-panel {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015)),
+      linear-gradient(180deg, rgba(8, 11, 20, 0.92), rgba(5, 8, 16, 0.94));
+    backdrop-filter: blur(14px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 18px 46px rgba(0, 0, 0, 0.28);
+  }
+
+  .home-panel-muted {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.01)),
+      rgba(8, 11, 20, 0.8);
+    backdrop-filter: blur(12px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.04),
+      0 12px 32px rgba(0, 0, 0, 0.2);
+  }
+
+  .home-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.38);
+  }
+
+  .home-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    padding: 0.35rem 0.55rem;
+    border-radius: 999px;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  .home-grid-card {
+    background:
+      linear-gradient(180deg, rgba(30, 36, 59, 0.92), rgba(13, 16, 32, 0.94)),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent);
+    transition:
+      transform 180ms ease,
+      box-shadow 180ms ease,
+      border-color 180ms ease;
+  }
+
+  .home-grid-card:hover {
+    transform: translateY(-3px);
+  }
+
+  .home-reward-tile {
+    transition:
+      transform 180ms ease,
+      border-color 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .home-reward-tile:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.16);
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.24);
+  }
+
+  .home-filter-select {
+    appearance: none;
+    background-image:
+      linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.55) 50%),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.55) 50%, transparent 50%);
+    background-position:
+      calc(100% - 18px) calc(50% - 3px),
+      calc(100% - 12px) calc(50% - 3px);
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+    padding-right: 2.75rem;
+  }
+
+  .home-filter-select option {
+    background: #0a101c;
+    color: #fff;
+  }
+
+  @keyframes rewards-marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+
+  .rewards-marquee-track {
+    animation: rewards-marquee var(--marquee-duration, 60s) linear infinite;
+  }
+
+  .rewards-marquee-track:hover,
+  .rewards-marquee-paused .rewards-marquee-track {
+    animation-play-state: paused;
   }
 }

@@ -39,8 +39,31 @@ type RelayerFees = {
   maxFeePerGas: bigint;
 };
 
+type OpenChestBody = {
+  configId: number;
+  userAddress: string;
+  referrer?: string;
+  amount?: number;
+  autoSell?: boolean;
+};
+
 function bumpPercent(value: bigint, percent: bigint) {
   return value + (value * percent) / BigInt(100);
+}
+
+function isValidUint32(value: number) {
+  return Number.isInteger(value) && value >= 0 && value <= 0xffff_ffff;
+}
+
+function formatCallArg(value: string | number | boolean) {
+  return typeof value === "string" ? `"${value}"` : String(value);
+}
+
+function buildCallPreview(
+  functionName: "open" | "openAndSetReferrer" | "openBatch",
+  args: readonly (string | number | boolean)[],
+) {
+  return `${functionName}(${args.map(formatCallArg).join(", ")})`;
 }
 
 const primaryPublicClient = createPublicClient({
@@ -134,28 +157,42 @@ async function getBumpedFees(): Promise<RelayerFees> {
 }
 
 export async function POST(request: Request) {
+  let requestBody: OpenChestBody | null = null;
+  let callPreview: string | null = null;
+
   try {
-    const body = await request.json();
-    const { configId, userAddress, referrer, amount, autoSell } = body as {
-      configId: number;
-      userAddress: string;
-      referrer?: string;
-      amount?: number;
-      autoSell?: boolean;
-    };
+    const body = (await request.json()) as OpenChestBody;
+    requestBody = body;
+    const { configId, userAddress, referrer, amount, autoSell } = body;
 
     if (configId === undefined || configId === null) {
-      return NextResponse.json({ error: "configId is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "configId is required", requestBody },
+        { status: 400 },
+      );
+    }
+
+    if (!isValidUint32(configId)) {
+      return NextResponse.json(
+        {
+          error: `Invalid configId: ${String(configId)}`,
+          requestBody,
+        },
+        { status: 400 },
+      );
     }
 
     if (!userAddress || !isAddress(userAddress)) {
-      return NextResponse.json({ error: "Invalid userAddress" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid userAddress", requestBody },
+        { status: 400 },
+      );
     }
 
     const openAmount = Number.isInteger(amount) ? Number(amount) : 1;
     if (openAmount < 1 || openAmount > MAX_BATCH) {
       return NextResponse.json(
-        { error: `amount must be between 1 and ${MAX_BATCH}` },
+        { error: `amount must be between 1 and ${MAX_BATCH}`, requestBody },
         { status: 400 },
       );
     }
@@ -195,8 +232,20 @@ export async function POST(request: Request) {
               args: [configId, userAddress as Address],
             } as const);
 
+    callPreview = buildCallPreview(
+      txParams.functionName,
+      txParams.args as readonly (string | number | boolean)[],
+    );
+
     const gas = computeFixedGasLimit(openAmount, isBatch, openWithAutoSell);
     const txParamsWithGas = { ...txParams, gas } as const;
+
+    console.info("open-chest request", {
+      callPreview,
+      requestBody,
+      gas: gas.toString(),
+      relayer: account.address,
+    });
 
     let hash: `0x${string}`;
     try {
@@ -212,6 +261,7 @@ export async function POST(request: Request) {
       mode: openAmount > 1 || openWithAutoSell ? "batch" : "single",
       amount: openAmount,
       autoSell: openWithAutoSell,
+      callPreview,
     });
   } catch (err: unknown) {
     const viemError = err as {
@@ -230,7 +280,19 @@ export async function POST(request: Request) {
       viemError.message ??
       "Unknown server error";
 
-    console.error("open-chest error:", reason, viemError);
-    return NextResponse.json({ error: reason }, { status: 500 });
+    console.error("open-chest error:", {
+      reason,
+      callPreview,
+      requestBody,
+      error: viemError,
+    });
+    return NextResponse.json(
+      {
+        error: reason,
+        callPreview,
+        requestBody,
+      },
+      { status: 500 },
+    );
   }
 }
