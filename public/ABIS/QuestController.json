@@ -1,0 +1,2156 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner_",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "userStats_",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "items_",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "shop_",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "defaultRewardToken_",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "ECDSAInvalidSignature",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "length",
+        "type": "uint256"
+      }
+    ],
+    "name": "ECDSAInvalidSignatureLength",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "s",
+        "type": "bytes32"
+      }
+    ],
+    "name": "ECDSAInvalidSignatureS",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidShortString",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableInvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ReentrancyGuardReentrantCall",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "SafeERC20FailedOperation",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "str",
+        "type": "string"
+      }
+    ],
+    "name": "StringTooLong",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "allowed",
+        "type": "bool"
+      }
+    ],
+    "name": "AllowedRewardTokenSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint32",
+        "name": "budgetGroupId",
+        "type": "uint32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "previousCap",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newCap",
+        "type": "uint256"
+      }
+    ],
+    "name": "DailyBudgetCapSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "previousValue",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newValue",
+        "type": "uint256"
+      }
+    ],
+    "name": "DailyStreakExpRewardSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [],
+    "name": "EIP712DomainChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "previousValue",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newValue",
+        "type": "uint256"
+      }
+    ],
+    "name": "ExpPerPaidOpenSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousInfiniteChest",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newInfiniteChest",
+        "type": "address"
+      }
+    ],
+    "name": "InfiniteChestSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousItems",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newItems",
+        "type": "address"
+      }
+    ],
+    "name": "ItemsSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "previousValue",
+        "type": "uint32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "newValue",
+        "type": "uint32"
+      }
+    ],
+    "name": "MaxActiveQuestsPerUserSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "acceptedQuestId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "templateId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "QuestAccepted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "acceptedQuestId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "templateId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "rewardToken",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "rewardAmount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "expReward",
+        "type": "uint256"
+      }
+    ],
+    "name": "QuestClaimed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "acceptedQuestId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "QuestCompleted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "acceptedQuestId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "progress",
+        "type": "uint32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "completed",
+        "type": "bool"
+      }
+    ],
+    "name": "QuestProgressUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousShop",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newShop",
+        "type": "address"
+      }
+    ],
+    "name": "ShopSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "StreakRewardAccrued",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "previousValue",
+        "type": "uint32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "newValue",
+        "type": "uint32"
+      }
+    ],
+    "name": "StreakRewardBudgetGroupSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "StreakRewardClaimed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "StreakRewardSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "templateId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum QuestController.QuestKind",
+        "name": "kind",
+        "type": "uint8"
+      }
+    ],
+    "name": "TemplateCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "templateId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum QuestController.QuestKind",
+        "name": "kind",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "active",
+        "type": "bool"
+      }
+    ],
+    "name": "TemplateUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousUserStats",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newUserStats",
+        "type": "address"
+      }
+    ],
+    "name": "UserStatsSet",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "templateId",
+        "type": "uint256"
+      }
+    ],
+    "name": "acceptQuest",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "acceptedQuestId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "templateId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint64",
+        "name": "deadline",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bytes",
+        "name": "signature",
+        "type": "bytes"
+      }
+    ],
+    "name": "acceptQuestWithSig",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "acceptedQuestId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "acceptedQuestCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "acceptedQuests",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "templateId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "internalType": "uint64",
+        "name": "acceptedAt",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint64",
+        "name": "deadline",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint32",
+        "name": "progress",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "resolvedConfigId",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "resolvedTokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "expReward",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "completed",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "claimed",
+        "type": "bool"
+      },
+      {
+        "internalType": "address",
+        "name": "rewardToken",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "rewardAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "rewardNft",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "rewardNftTokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "rewardNftAmount",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "allowedRewardTokens",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "acceptedQuestId",
+        "type": "uint256"
+      }
+    ],
+    "name": "claimQuest",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "acceptedQuestId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint64",
+        "name": "deadline",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bytes",
+        "name": "signature",
+        "type": "bytes"
+      }
+    ],
+    "name": "claimQuestWithSig",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "claimStreakReward",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "internalType": "uint64",
+        "name": "deadline",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bytes",
+        "name": "signature",
+        "type": "bytes"
+      }
+    ],
+    "name": "claimStreakRewardWithSig",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "enum QuestController.QuestKind",
+            "name": "kind",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "snapshotReward",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint32",
+            "name": "target",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "fixedConfigId",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "minLevelToAccept",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "budgetGroupId",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "acceptStart",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "acceptEnd",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "completionWindow",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint16",
+            "name": "burnRewardBonusBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint256",
+            "name": "fixedTokenId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "rewardAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "rewardNftTokenId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "rewardNftAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "expReward",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "maxRewardPerMission",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "rewardToken",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "rewardNft",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct QuestController.QuestTemplateInput",
+        "name": "input",
+        "type": "tuple"
+      },
+      {
+        "internalType": "uint32[]",
+        "name": "configPool",
+        "type": "uint32[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "tokenPool",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "createTemplate",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "templateId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      }
+    ],
+    "name": "dailyBudgetCap",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "name": "dailyBudgetSpent",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "dailyStreakExpReward",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "eip712Domain",
+    "outputs": [
+      {
+        "internalType": "bytes1",
+        "name": "fields",
+        "type": "bytes1"
+      },
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "version",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "chainId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "verifyingContract",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "salt",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "extensions",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "expPerPaidOpen",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "getActiveQuestIds",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "templateId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getTemplate",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "enum QuestController.QuestKind",
+            "name": "kind",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "snapshotReward",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint32",
+            "name": "target",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "fixedConfigId",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "minLevelToAccept",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "budgetGroupId",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "acceptStart",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "acceptEnd",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "completionWindow",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint16",
+            "name": "burnRewardBonusBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint256",
+            "name": "fixedTokenId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "rewardAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "rewardNftTokenId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "rewardNftAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "expReward",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "maxRewardPerMission",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "rewardToken",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "rewardNft",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct QuestController.QuestTemplate",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "templateId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getTemplateConfigPool",
+    "outputs": [
+      {
+        "internalType": "uint32[]",
+        "name": "",
+        "type": "uint32[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "templateId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getTemplateTokenPool",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "getUserQuestBoard",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "acceptedQuestId",
+            "type": "uint256"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint256",
+                "name": "templateId",
+                "type": "uint256"
+              },
+              {
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+              },
+              {
+                "internalType": "uint64",
+                "name": "acceptedAt",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "deadline",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint32",
+                "name": "progress",
+                "type": "uint32"
+              },
+              {
+                "internalType": "uint32",
+                "name": "resolvedConfigId",
+                "type": "uint32"
+              },
+              {
+                "internalType": "uint256",
+                "name": "resolvedTokenId",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "expReward",
+                "type": "uint256"
+              },
+              {
+                "internalType": "bool",
+                "name": "completed",
+                "type": "bool"
+              },
+              {
+                "internalType": "bool",
+                "name": "claimed",
+                "type": "bool"
+              },
+              {
+                "internalType": "address",
+                "name": "rewardToken",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "rewardAmount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "address",
+                "name": "rewardNft",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "rewardNftTokenId",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "rewardNftAmount",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct QuestController.AcceptedQuest",
+            "name": "quest",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "internalType": "enum QuestController.QuestKind",
+                "name": "kind",
+                "type": "uint8"
+              },
+              {
+                "internalType": "bool",
+                "name": "active",
+                "type": "bool"
+              },
+              {
+                "internalType": "bool",
+                "name": "snapshotReward",
+                "type": "bool"
+              },
+              {
+                "internalType": "uint32",
+                "name": "target",
+                "type": "uint32"
+              },
+              {
+                "internalType": "uint32",
+                "name": "fixedConfigId",
+                "type": "uint32"
+              },
+              {
+                "internalType": "uint32",
+                "name": "minLevelToAccept",
+                "type": "uint32"
+              },
+              {
+                "internalType": "uint32",
+                "name": "budgetGroupId",
+                "type": "uint32"
+              },
+              {
+                "internalType": "uint64",
+                "name": "acceptStart",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "acceptEnd",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "completionWindow",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint16",
+                "name": "burnRewardBonusBps",
+                "type": "uint16"
+              },
+              {
+                "internalType": "uint256",
+                "name": "fixedTokenId",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "rewardAmount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "rewardNftTokenId",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "rewardNftAmount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "expReward",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "maxRewardPerMission",
+                "type": "uint256"
+              },
+              {
+                "internalType": "address",
+                "name": "rewardToken",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "rewardNft",
+                "type": "address"
+              }
+            ],
+            "internalType": "struct QuestController.QuestTemplate",
+            "name": "template",
+            "type": "tuple"
+          }
+        ],
+        "internalType": "struct QuestController.QuestBoardEntry[]",
+        "name": "board",
+        "type": "tuple[]"
+      },
+      {
+        "internalType": "uint256",
+        "name": "pendingStreak",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint32",
+        "name": "maxActive",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "infiniteChest",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "items",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "maxActiveQuestsPerUser",
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "nonces",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "configId",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "paidOpens",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "bonusOpens",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "isBatch",
+        "type": "bool"
+      }
+    ],
+    "name": "onChestAction",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "name": "onERC1155BatchReceived",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "name": "onERC1155Received",
+    "outputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "pendingStreakRewards",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "acceptedQuestId",
+        "type": "uint256"
+      }
+    ],
+    "name": "previewQuestReward",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "rewardToken",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "rewardAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "rewardNft",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "rewardNftTokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "rewardNftAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "expReward",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "randomNonce",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "allowed",
+        "type": "bool"
+      }
+    ],
+    "name": "setAllowedRewardToken",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "budgetGroupId",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "newCap",
+        "type": "uint256"
+      }
+    ],
+    "name": "setDailyBudgetCap",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "newValue",
+        "type": "uint256"
+      }
+    ],
+    "name": "setDailyStreakExpReward",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "newValue",
+        "type": "uint256"
+      }
+    ],
+    "name": "setExpPerPaidOpen",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "infiniteChest_",
+        "type": "address"
+      }
+    ],
+    "name": "setInfiniteChest",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "items_",
+        "type": "address"
+      }
+    ],
+    "name": "setItems",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "newMax",
+        "type": "uint32"
+      }
+    ],
+    "name": "setMaxActiveQuestsPerUser",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "shop_",
+        "type": "address"
+      }
+    ],
+    "name": "setShop",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "setStreakReward",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "budgetGroupId",
+        "type": "uint32"
+      }
+    ],
+    "name": "setStreakRewardBudgetGroup",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "userStats_",
+        "type": "address"
+      }
+    ],
+    "name": "setUserStats",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "shop",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "streakRewardAmount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "streakRewardBudgetGroupId",
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "streakRewardToken",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "interfaceId",
+        "type": "bytes4"
+      }
+    ],
+    "name": "supportsInterface",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "templateCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "templateId",
+        "type": "uint256"
+      },
+      {
+        "components": [
+          {
+            "internalType": "enum QuestController.QuestKind",
+            "name": "kind",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "snapshotReward",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint32",
+            "name": "target",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "fixedConfigId",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "minLevelToAccept",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "budgetGroupId",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "acceptStart",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "acceptEnd",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "completionWindow",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint16",
+            "name": "burnRewardBonusBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint256",
+            "name": "fixedTokenId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "rewardAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "rewardNftTokenId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "rewardNftAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "expReward",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "maxRewardPerMission",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "rewardToken",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "rewardNft",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct QuestController.QuestTemplateInput",
+        "name": "input",
+        "type": "tuple"
+      },
+      {
+        "internalType": "uint32[]",
+        "name": "configPool",
+        "type": "uint32[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "tokenPool",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "updateTemplate",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "userStats",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "nft",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "withdrawRewardNFT",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "withdrawRewardToken",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

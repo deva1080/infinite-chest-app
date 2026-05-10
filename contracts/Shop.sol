@@ -43,7 +43,7 @@ contract Shop is ERC1155Holder, Ownable {
     );
     event NFTWithdrawn(address indexed to, uint256 indexed tokenId, uint256 amount);
 
-    constructor(address treasury_, address keyToken_, address itemsContract_, address infiniteChest_) Ownable(msg.sender) {
+    constructor(address owner_, address treasury_, address keyToken_, address itemsContract_, address infiniteChest_) Ownable(owner_) {
         treasury = treasury_;
         keyToken = keyToken_;
         itemsContract = itemsContract_;
@@ -212,6 +212,13 @@ contract Shop is ERC1155Holder, Ownable {
 
         ITreasury(treasury).withdraw(keyToken, user, totalPrice);
         emit AutoSoldFromChest(user, configId, totalItems, totalPrice);
+    }
+
+    function getTokenPrices(uint256[] calldata tokenIds) external view returns (uint256[] memory prices) {
+        prices = new uint256[](tokenIds.length);
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            prices[i] = tokenPrice[tokenIds[i]];
+        }
     }
 
     function getConfig(uint32 configId) external view returns (ShopConfig memory) {

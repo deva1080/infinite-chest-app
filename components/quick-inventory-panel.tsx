@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import {
   useAccount,
   useReadContract,
-  useReadContracts,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
@@ -23,6 +22,7 @@ import {
 import { TokenImage } from "@/components/token-image";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/lib/store/app-store";
+import { useNftInventory } from "@/lib/hooks/use-nft-inventory";
 
 const localConfigs = getAllLocalConfigs();
 
@@ -39,7 +39,6 @@ export function QuickInventoryPanel() {
   const { address, isConnected } = useAccount();
   const bumpBalanceNonce = useAppStore((s) => s.bumpBalanceNonce);
   const bumpInventoryNonce = useAppStore((s) => s.bumpInventoryNonce);
-  const inventoryNonce = useAppStore((s) => s.inventoryNonce);
 
   const isGamePage = pathname === "/game";
   const gameConfigId = isGamePage
@@ -54,52 +53,8 @@ export function QuickInventoryPanel() {
 
   const itemsConfig = getContractConfig("CrateGameItems");
   const shopConfig = getContractConfig("Shop");
-
-  const { data: ownedIds, refetch: refetchOwned } = useReadContract({
-    ...itemsConfig,
-    functionName: "ownedIds",
-    args: address ? [address] : undefined,
-    query: {
-      enabled: Boolean(address),
-      staleTime: 20_000,
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  });
-
-  const ownedIdsList = (ownedIds as bigint[]) ?? [];
-
-  const { data: balances, refetch: refetchBalances } = useReadContracts({
-    contracts: ownedIdsList.map((tokenId) => ({
-      ...itemsConfig,
-      functionName: "balanceOf" as const,
-      args: [address!, tokenId],
-    })),
-    query: {
-      enabled: Boolean(address) && ownedIdsList.length > 0,
-      staleTime: 20_000,
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  });
-
-  useEffect(() => {
-    if (inventoryNonce > 0) {
-      refetchOwned();
-      refetchBalances();
-    }
-  }, [inventoryNonce, refetchOwned, refetchBalances]);
-
-  const balanceMap = useMemo(() => {
-    const map = new Map<string, bigint>();
-    if (balances) {
-      for (let i = 0; i < ownedIdsList.length; i++) {
-        const val = balances[i]?.result;
-        if (val != null) map.set(ownedIdsList[i].toString(), val as bigint);
-      }
-    }
-    return map;
-  }, [balances, ownedIdsList]);
+  const { balanceMap, isFirstLoad, isRefreshing, refetchInventory } =
+    useNftInventory(address);
 
   const configInventory = useMemo(() => {
     return localConfigs.map((cfg) => {
@@ -259,8 +214,7 @@ export function QuickInventoryPanel() {
       toast.success(`${totalItems} NFTs vendidos!`);
       setSellSelection({});
       setShowConfirm(false);
-      refetchOwned();
-      refetchBalances();
+      refetchInventory();
       bumpBalanceNonce();
       bumpInventoryNonce();
     } catch (e) {
@@ -301,9 +255,22 @@ export function QuickInventoryPanel() {
           <>
             {/* Header */}
             <div className="shrink-0 border-b border-white/10 px-4 py-3">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-white">
-                Quick Sell
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+                  Quick Sell
+                </h3>
+                {isConnected && !isFirstLoad && (
+                  <button
+                    type="button"
+                    onClick={() => refetchInventory()}
+                    disabled={isRefreshing}
+                    className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-white/40 transition-colors hover:bg-white/8 hover:text-white/70 disabled:opacity-50"
+                  >
+                    <span className={isRefreshing ? "animate-spin" : ""}>&#x21bb;</span>
+                    {isRefreshing ? "..." : "Refresh"}
+                  </button>
+                )}
+              </div>
               <p className="mt-0.5 text-[10px] text-white/45">
                 {isGamePage
                   ? `Showing config #${gameConfigId}`
@@ -317,6 +284,11 @@ export function QuickInventoryPanel() {
                 <p className="py-8 text-center text-xs text-white/40">
                   Connect wallet to view inventory
                 </p>
+              ) : isFirstLoad ? (
+                <div className="flex flex-col items-center gap-2 py-10">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-cyan-400" />
+                  <p className="text-[10px] text-white/40">Loading NFTs...</p>
+                </div>
               ) : (
                 <div className="flex flex-col gap-1.5">
                   {configInventory.map(

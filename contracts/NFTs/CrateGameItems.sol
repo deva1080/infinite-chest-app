@@ -5,13 +5,14 @@ import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 // agregar mapping de minters...
+// agregar total ballance view function (all ids) 
 contract CrateGameItems is ERC1155, Ownable {
     using EnumerableSet for EnumerableSet.UintSet;
 
     address public minter;
     mapping(address => EnumerableSet.UintSet) private _ownedIds;
 
-    constructor(address minter_) ERC1155("") Ownable(msg.sender) {
+    constructor(address owner_, address minter_) ERC1155("") Ownable(owner_) {
         minter = minter_;
     }
 
@@ -48,6 +49,28 @@ contract CrateGameItems is ERC1155, Ownable {
 
         for (uint256 i = 0; i < length; i++) {
             ids[i] = _ownedIds[user].at(i);
+        }
+    }
+
+    function getBalances(address user) external view returns (uint256[] memory ids, uint256[] memory amounts) {
+        uint256 length = _ownedIds[user].length();
+        ids = new uint256[](length);
+        amounts = new uint256[](length);
+        uint256 count;
+
+        for (uint256 i = 0; i < length; i++) {
+            uint256 id = _ownedIds[user].at(i);
+            uint256 bal = balanceOf(user, id);
+            if (bal > 0) {
+                ids[count] = id;
+                amounts[count] = bal;
+                count++;
+            }
+        }
+
+        assembly {
+            mstore(ids, count)
+            mstore(amounts, count)
         }
     }
 

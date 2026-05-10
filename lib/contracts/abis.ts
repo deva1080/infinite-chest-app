@@ -5,6 +5,7 @@ import burnCollectionVaultAbiJson from "@/public/ABIS/BurnCollectionVault.json";
 import epicKeyAbiJson from "@/public/ABIS/EpicKey.json";
 import infiniteChestAbiJson from "@/public/ABIS/InfiniteChest.json";
 import keyAbiJson from "@/public/ABIS/Key.json";
+import questControllerAbiJson from "@/public/ABIS/QuestController.json";
 import rareKeyAbiJson from "@/public/ABIS/RareKey.json";
 import shopAbiJson from "@/public/ABIS/Shop.json";
 import treasuryAbiJson from "@/public/ABIS/Treasury.json";
@@ -16,6 +17,7 @@ export const contractAbis = {
   Treasury: treasuryAbiJson as Abi,
   CrateGameItems: crateGameItemsAbiJson as Abi,
   BurnCollectionVault: burnCollectionVaultAbiJson as Abi,
+  QuestController: questControllerAbiJson as Abi,
   EpicKey: epicKeyAbiJson as Abi,
   Key: keyAbiJson as Abi,
   RareKey: rareKeyAbiJson as Abi,

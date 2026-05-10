@@ -4,10 +4,11 @@ import { toast } from "sonner";
 import {
   useAccount,
   useReadContract,
-  useReadContracts,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
+
+import Link from "next/link";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -21,56 +22,19 @@ import {
   isBonusTokenId,
 } from "@/lib/item-catalog";
 import { getAllLocalConfigs } from "@/lib/chest-configs";
+import { useNftInventory } from "@/lib/hooks/use-nft-inventory";
+import { useAppStore } from "@/lib/store/app-store";
 
 const localConfigs = getAllLocalConfigs();
 
 export default function CollectionsPage() {
   const { address, isConnected } = useAccount();
+  const bumpInventoryNonce = useAppStore((s) => s.bumpInventoryNonce);
 
   const itemsConfig = getContractConfig("CrateGameItems");
   const shopConfig = getContractConfig("Shop");
-
-  const { data: ownedIds, refetch: refetchOwned } = useReadContract({
-    ...itemsConfig,
-    functionName: "ownedIds",
-    args: address ? [address] : undefined,
-    query: {
-      enabled: Boolean(address),
-      staleTime: 20_000,
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  });
-
-  const ownedSet = new Set(
-    ((ownedIds as bigint[]) ?? []).map((id) => id.toString()),
-  );
-
-  const ownedIdsList = (ownedIds as bigint[]) ?? [];
-
-  const { data: balances } = useReadContracts({
-    contracts: ownedIdsList.map((tokenId) => ({
-      ...itemsConfig,
-      functionName: "balanceOf" as const,
-      args: [address!, tokenId],
-    })),
-    query: {
-      enabled: Boolean(address) && ownedIdsList.length > 0,
-      staleTime: 20_000,
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  });
-
-  const balanceMap = new Map<string, bigint>();
-  if (balances) {
-    for (let i = 0; i < ownedIdsList.length; i++) {
-      const val = balances[i]?.result;
-      if (val != null) {
-        balanceMap.set(ownedIdsList[i].toString(), val as bigint);
-      }
-    }
-  }
+  const { balanceMap, isFirstLoad, isRefreshing, refetchInventory } =
+    useNftInventory(address);
 
   const { data: isShopApproved, refetch: refetchShopApproval } =
     useReadContract({
@@ -127,7 +91,8 @@ export default function CollectionsPage() {
         args: [cfgId, tokenId, BigInt(1)],
       });
       toast.success("Venta realizada!");
-      refetchOwned();
+      await refetchInventory();
+      bumpInventoryNonce();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Error al vender");
     }
@@ -168,6 +133,28 @@ export default function CollectionsPage() {
         </p>
       )}
 
+      {isConnected && isFirstLoad && (
+        <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-3">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+          <p className="text-sm text-white/70">Loading your NFTs...</p>
+        </div>
+      )}
+
+      {isConnected && !isFirstLoad && (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1.5 px-2.5 text-xs text-white/50 hover:text-white/80"
+            onClick={() => refetchInventory()}
+            disabled={isRefreshing}
+          >
+            <span className={isRefreshing ? "animate-spin" : ""}>&#x21bb;</span>
+            {isRefreshing ? "Refreshing..." : "Refresh"}
+          </Button>
+        </div>
+      )}
+
       {isConnected &&
         localConfigs.map((cfg) => {
           const cfgId = cfg.configId;
@@ -176,7 +163,20 @@ export default function CollectionsPage() {
 
           return (
             <section key={cfgId} className="space-y-3">
-              <h2 className="text-lg font-semibold">Collection {cfgId}</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-semibold">
+                  Collection {cfgId}
+                  <span className="ml-1.5 text-sm font-normal text-muted-foreground">
+                    — {cfg.name}
+                  </span>
+                </h2>
+                <Link
+                  href={`/game?configId=${cfgId}`}
+                  className="rounded-md border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  Open Chest
+                </Link>
+              </div>
 
               {tokenIds.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
@@ -186,7 +186,7 @@ export default function CollectionsPage() {
                 <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                   {tokenIds.map((tid, i) => {
                     const bal = balanceMap.get(tid.toString());
-                    const hasToken = ownedSet.has(tid.toString()) && bal !== undefined && bal > BigInt(0);
+                    const hasToken = bal !== undefined && bal > BigInt(0);
                     const price = sellPrices[i];
                     const isBonus = isBonusTokenId(tid);
 

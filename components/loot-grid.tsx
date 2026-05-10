@@ -340,10 +340,23 @@ function ItemGrid({
   isGolden,
 }: ItemGridProps) {
   const gridCols = getGridCols(items.length);
+  const isSingle = items.length === 1;
 
   return (
-    <div className={cn("relative grid gap-1.5", gridCols)}>
-      {items.map((item, localIdx) => {
+    <div
+      className={
+        isSingle
+          ? "relative flex w-full justify-center"
+          : cn("relative grid gap-1.5", gridCols)
+      }
+    >
+      {isSingle && <div className="w-[min(85%,320px)]">{renderTiles()}</div>}
+      {!isSingle && renderTiles()}
+    </div>
+  );
+
+  function renderTiles() {
+    return items.map((item, localIdx) => {
         const globalIdx = globalOffset + localIdx;
         const isRevealed = globalIdx < revealedCount;
         const showFloatValue = activeFloatIndexes.includes(globalIdx);
@@ -419,7 +432,6 @@ function ItemGrid({
             )}
           </div>
         );
-      })}
-    </div>
-  );
+    });
+  }
 }

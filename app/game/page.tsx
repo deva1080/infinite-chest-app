@@ -8,7 +8,6 @@ import {
   useAccount,
   usePublicClient,
   useReadContract,
-  useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
@@ -32,8 +31,10 @@ import {
 import { cn } from "@/lib/utils";
 import { getLocalConfig, type LocalChestConfig } from "@/lib/chest-configs";
 import { useAppStore } from "@/lib/store/app-store";
+import { simulateOpenBatch } from "@/lib/demo-roll";
 import { LootGrid, type RevealItem } from "@/components/loot-grid";
 import { RunicBackdrop } from "@/components/runic-backdrop";
+import { FlaskConical } from "lucide-react";
 
 const erc20Abi = contractAbis.Key;
 
@@ -120,8 +121,11 @@ export default function GamePage() {
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
   const bumpBalanceNonce = useAppStore((s) => s.bumpBalanceNonce);
+  const bumpInventoryNonce = useAppStore((s) => s.bumpInventoryNonce);
+  const bumpUserDataNonce = useAppStore((s) => s.bumpUserDataNonce);
   const addKeyDelta = useAppStore((s) => s.addKeyDelta);
   const addNftDelta = useAppStore((s) => s.addNftDelta);
+  const testMode = useAppStore((s) => s.testMode);
 
   const [openResult, setOpenResult] = useState<OpenResult | null>(null);
   const [openAmount, setOpenAmount] = useState(1);
@@ -129,7 +133,7 @@ export default function GamePage() {
   const [revealPhase, setRevealPhase] = useState<RevealPhase>("idle");
   const [revealItems, setRevealItems] = useState<RevealItem[]>([]);
   const chestRef = useRef<HTMLDivElement>(null);
-  const handledApproveHashRef = useRef<`0x${string}` | null>(null);
+
 
   const meta = getChestMeta(configId);
   const localCfg: LocalChestConfig | undefined = getLocalConfig(configId);
@@ -176,43 +180,40 @@ export default function GamePage() {
     });
 
   const {
-    data: approveHash,
     isPending: isApprovePending,
     writeContractAsync: writeApprove,
   } = useWriteContract();
-  const {
-    isLoading: isApproveConfirming,
-    isSuccess: isApproveConfirmed,
-  } = useWaitForTransactionReceipt({ hash: approveHash });
+  const [isApproveWaiting, setIsApproveWaiting] = useState(false);
 
   const needsTokenApproval =
+    !testMode &&
     requiredApproval !== undefined &&
     paymentAllowance !== undefined &&
     (paymentAllowance as bigint) < requiredApproval;
 
-  const isApproveBusy = isApprovePending || isApproveConfirming;
-
-  useEffect(() => {
-    if (!approveHash || !isApproveConfirmed) return;
-    if (handledApproveHashRef.current === approveHash) return;
-
-    handledApproveHashRef.current = approveHash;
-    refetchAllowance();
-    toast.success("Approve confirmado");
-  }, [approveHash, isApproveConfirmed, refetchAllowance]);
+  const isApproveBusy = isApprovePending || isApproveWaiting;
 
   async function handleApproveToken() {
-    if (!requiredApproval || !chestPaymentToken) return;
+    if (!requiredApproval || !chestPaymentToken || !publicClient) return;
     try {
-      await writeApprove({
+      const hash = await writeApprove({
         address: chestPaymentToken as Address,
         abi: erc20Abi,
         functionName: "approve",
         args: [contractAddresses.Treasury, requiredApproval],
       });
       toast.info("Approve enviado. Esperando confirmacion...");
+      setIsApproveWaiting(true);
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+      if (receipt.status !== "success") {
+        throw new Error("Approve transaction reverted");
+      }
+      await refetchAllowance();
+      toast.success("Approve confirmado");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Error al aprobar");
+    } finally {
+      setIsApproveWaiting(false);
     }
   }
 
@@ -243,7 +244,7 @@ export default function GamePage() {
   }, []);
 
   const handleOpenChest = useCallback(async () => {
-    if (!address || !publicClient || !localCfg) return;
+    if (!localCfg) return;
 
     if (!Number.isInteger(configId) || configId < 0) {
       const invalidMsg = `Config ID invalido: ${String(configId)}`;
@@ -256,11 +257,47 @@ export default function GamePage() {
       return;
     }
 
+    // ---------- DEMO / TEST MODE ----------
+    // Visual-only simulation: no tx, no balance changes, no API call.
+    // Reuses the same reveal pipeline as a real `ChestBatchOpened` event.
+    if (testMode) {
+      setRevealPhase("charging");
+      setOpenResult(null);
+      setRevealItems([]);
+
+      // Small artificial delay so the "charging" animation plays.
+      await new Promise((resolve) => setTimeout(resolve, 900));
+
+      const sim = simulateOpenBatch(localCfg, openAmount, true);
+      const resultTokenId =
+        pickDominantTokenId(localCfg.tokenIds, sim.rolledIndexes) ??
+        localCfg.tokenIds[0];
+      const totalPrice = (localCfg.price ?? BigInt(0)) * BigInt(openAmount);
+      const items = buildRevealItems(localCfg, sim.rolledIndexes);
+
+      setOpenResult({
+        mode: "batch",
+        resultTokenId,
+        price: totalPrice,
+        paidOpens: sim.paidOpens,
+        bonusOpens: sim.bonusOpens,
+        totalRolls: sim.paidOpens + sim.bonusOpens,
+        autoSell,
+        rolledIndexes: sim.rolledIndexes,
+      });
+      setRevealItems(items);
+      setRevealPhase("revealing");
+      toast.info("Demo open simulated locally — no transaction was sent.");
+      return;
+    }
+    // ---------- /DEMO MODE ----------
+
+    if (!address || !publicClient) return;
+
     setRevealPhase("charging");
     setOpenResult(null);
     setRevealItems([]);
 
-    // Optimistic deduction — animate header KEY balance down
     if (chestPrice) {
       const costFloat = Number(formatUnits(chestPrice * BigInt(openAmount), 18));
       addKeyDelta(-costFloat);
@@ -443,6 +480,9 @@ export default function GamePage() {
 
       refetchAllowance();
       bumpBalanceNonce();
+      bumpInventoryNonce();
+      bumpUserDataNonce();
+      toast.info("Stats y quests actualizados desde la apertura");
     } catch (err) {
       const msg =
         err instanceof Error ? err.message : "Error al abrir el chest";
@@ -465,11 +505,14 @@ export default function GamePage() {
     autoSell,
     chestTokenIds,
     bumpBalanceNonce,
+    bumpInventoryNonce,
+    bumpUserDataNonce,
     localCfg,
     addKeyDelta,
     addNftDelta,
     chestPrice,
     searchParams,
+    testMode,
   ]);
 
   function handleReset() {
@@ -491,10 +534,27 @@ export default function GamePage() {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-4 py-1">
-      {!isConnected && (
+      {testMode && (
+        <div className="flex w-full items-start gap-3 rounded-xl border border-amber-400/40 bg-amber-500/12 px-4 py-3 backdrop-blur-sm sm:items-center">
+          <FlaskConical className="mt-0.5 h-5 w-5 shrink-0 text-amber-300 sm:mt-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold uppercase tracking-[0.18em] text-amber-200">
+              Demo Mode — Visual Only
+            </p>
+            <p className="mt-1 text-[13px] leading-snug text-amber-100/85">
+              Chest openings are simulated locally for preview purposes — no transactions are sent and no balances change. Heads up: the live version uses a different on-chain randomness source, so real drops may differ from what you see here.
+            </p>
+          </div>
+          <span className="hidden shrink-0 rounded-md border border-amber-400/40 bg-amber-400/15 px-2.5 py-1 text-[10px] font-extrabold tracking-widest text-amber-200 sm:inline">
+            PRELAUNCH
+          </span>
+        </div>
+      )}
+
+      {!isConnected && !testMode && (
         <div className="w-full rounded-xl border border-amber-400/30 bg-amber-500/8 px-4 py-3 text-center backdrop-blur-sm">
-          <p className="text-xs font-semibold text-amber-200">
-            Wallet desconectada — conecta tu wallet para jugar.
+          <p className="text-sm font-semibold text-amber-200">
+            Wallet not connected — connect your wallet to play.
           </p>
         </div>
       )}
@@ -697,7 +757,7 @@ export default function GamePage() {
                 <button
                   onClick={isDone ? handleReset : handleOpenChest}
                   disabled={
-                    !isConnected ||
+                    (!isConnected && !testMode) ||
                     isCharging ||
                     isRevealing ||
                     needsTokenApproval
@@ -713,11 +773,12 @@ export default function GamePage() {
                       ? "Opening..."
                       : isDone
                         ? "OPEN AGAIN"
-                        : openAmount > 1
-                          ? `OPEN x${openAmount}`
-                          : "OPEN"}
-                    {!isCharging && !isDone && (
+                        : `${testMode ? "DEMO " : ""}OPEN${openAmount > 1 ? ` x${openAmount}` : ""}`}
+                    {!isCharging && !isDone && !testMode && (
                       <Lock className="h-3.5 w-3.5 text-white/60" />
+                    )}
+                    {!isCharging && !isDone && testMode && (
+                      <FlaskConical className="h-3.5 w-3.5 text-white/70" />
                     )}
                   </span>
                   <div className="absolute inset-0 bg-white/0 transition-all group-hover:bg-white/10" />

@@ -80,13 +80,14 @@ contract BurnCollectionVault is Ownable {
     event DropExpired(uint256 indexed positionId, address indexed user, uint32 indexed configId, uint64 day);
 
     constructor(
+        address owner_,
         address treasury_,
         address shop_,
         address infiniteChest_,
         address items_,
         address keyToken_,
         uint64 durationDays_
-    ) Ownable(msg.sender) {
+    ) Ownable(owner_) {
         require(treasury_ != address(0), "invalid treasury");
         require(shop_ != address(0), "invalid shop");
         require(infiniteChest_ != address(0), "invalid chest");
@@ -187,7 +188,7 @@ contract BurnCollectionVault is Ownable {
             configId: configId,
             startDay: today,
             endDay: endDay,
-            lastClaimDay: today - 1,
+            lastClaimDay: type(uint64).max,
             dailyReward: rewardPerDay,
             active: true
         });
@@ -228,15 +229,54 @@ contract BurnCollectionVault is Ownable {
     }
 
     function pendingToday(uint256 positionId) external view returns (uint256) {
+        return _pendingToday(positionId);
+    }
+
+    function getUserPositionIds(address user) external view returns (uint256[] memory) {
+        return _userPositionIds[user];
+    }
+
+    struct PositionSummary {
+        uint256 positionId;
+        uint32 configId;
+        uint64 startDay;
+        uint64 endDay;
+        uint64 lastClaimDay;
+        uint256 dailyReward;
+        bool active;
+        uint256 pending;
+    }
+
+    function getUserSummary(address user) external view returns (
+        PositionSummary[] memory summaries,
+        uint256 totalPending
+    ) {
+        uint256[] storage ids = _userPositionIds[user];
+        summaries = new PositionSummary[](ids.length);
+
+        for (uint256 i = 0; i < ids.length; i++) {
+            DropPosition storage p = positions[ids[i]];
+            uint256 pending = _pendingToday(ids[i]);
+            summaries[i] = PositionSummary({
+                positionId: ids[i],
+                configId: p.configId,
+                startDay: p.startDay,
+                endDay: p.endDay,
+                lastClaimDay: p.lastClaimDay,
+                dailyReward: p.dailyReward,
+                active: p.active,
+                pending: pending
+            });
+            totalPending += pending;
+        }
+    }
+
+    function _pendingToday(uint256 positionId) internal view returns (uint256) {
         DropPosition storage position = positions[positionId];
         if (!_isClaimableToday(position, _currentDay())) {
             return 0;
         }
         return position.dailyReward;
-    }
-
-    function getUserPositionIds(address user) external view returns (uint256[] memory) {
-        return _userPositionIds[user];
     }
 
     function _claimSingle(
@@ -303,6 +343,10 @@ contract BurnCollectionVault is Ownable {
 
         if (today < position.startDay || today > position.endDay) {
             return false;
+        }
+
+        if (position.lastClaimDay == type(uint64).max) {
+            return true;
         }
 
         return position.lastClaimDay < today;

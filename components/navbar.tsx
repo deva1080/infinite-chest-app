@@ -7,12 +7,14 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useReadContract } from "wagmi";
 import { useEffect, useMemo } from "react";
 import { formatUnits } from "viem";
-import { Home, LayoutGrid, Users, Trophy } from "lucide-react";
+import { Flame, FlaskConical, Home, LayoutGrid, ScrollText, Users } from "lucide-react";
 
 import { getContractConfig } from "@/lib/contracts";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/lib/store/app-store";
 import { useAnimatedNumber } from "@/lib/hooks/use-animated-number";
+import { useUserStats } from "@/lib/hooks/use-user-stats";
+import { useNftInventory } from "@/lib/hooks/use-nft-inventory";
 
 const KEY_DECIMALS = 18;
 
@@ -20,7 +22,8 @@ const links = [
   { href: "/", label: "Home", icon: Home },
   { href: "/collections", label: "Collections", icon: LayoutGrid },
   { href: "/referrals", label: "Referrals", icon: Users },
-  { href: "/achievements", label: "Achievements", icon: Trophy },
+  { href: "/quests", label: "Quests", icon: ScrollText },
+  { href: "/burn-vault", label: "Burn Vault", icon: Flame },
 ] as const;
 
 export function Navbar() {
@@ -31,25 +34,16 @@ export function Navbar() {
   const nftDelta = useAppStore((s) => s.nftDelta);
   const resetKeyDelta = useAppStore((s) => s.resetKeyDelta);
   const resetNftDelta = useAppStore((s) => s.resetNftDelta);
+  const testMode = useAppStore((s) => s.testMode);
+  const toggleTestMode = useAppStore((s) => s.toggleTestMode);
 
   const keyConfig = getContractConfig("Key");
-  const itemsConfig = getContractConfig("CrateGameItems");
+  const userStats = useUserStats(address);
+  const { totalNftCount, refetchInventory } = useNftInventory(address);
 
   const { data: keyBalance, refetch: refetchBalance } = useReadContract({
     ...keyConfig,
     functionName: "balanceOf",
-    args: address ? [address] : undefined,
-    query: {
-      enabled: Boolean(address),
-      staleTime: 30_000,
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  });
-
-  const { data: ownedIds, refetch: refetchOwned } = useReadContract({
-    ...itemsConfig,
-    functionName: "ownedIds",
     args: address ? [address] : undefined,
     query: {
       enabled: Boolean(address),
@@ -64,14 +58,14 @@ export function Navbar() {
     return Number(formatUnits(keyBalance as bigint, KEY_DECIMALS));
   }, [keyBalance]);
 
-  const onChainNftCount = (ownedIds as bigint[] | undefined)?.length ?? 0;
+  const onChainNftCount = totalNftCount;
 
   useEffect(() => {
     if (balanceNonce > 0) {
       refetchBalance().then(() => resetKeyDelta());
-      refetchOwned().then(() => resetNftDelta());
+      refetchInventory().then(() => resetNftDelta());
     }
-  }, [balanceNonce, refetchBalance, refetchOwned, resetKeyDelta, resetNftDelta]);
+  }, [balanceNonce, refetchBalance, refetchInventory, resetKeyDelta, resetNftDelta]);
 
   const targetKeyValue = onChainKeyFloat + keyDelta;
   const targetNftValue = onChainNftCount + nftDelta;
@@ -132,6 +126,40 @@ export function Navbar() {
 
         <div className="flex-1" />
 
+        <button
+          type="button"
+          onClick={toggleTestMode}
+          title={
+            testMode
+              ? "Test Mode is ON — chest opens are simulated, no transactions"
+              : "Test Mode is OFF — real transactions"
+          }
+          className={cn(
+            "mr-2 flex h-9 items-center gap-2 rounded-xl border px-3 text-[10px] font-bold uppercase tracking-[0.14em] transition-all",
+            testMode
+              ? "border-amber-400/60 bg-amber-500/15 text-amber-200 shadow-[0_0_18px_rgba(245,158,11,0.35),inset_0_1px_0_rgba(255,255,255,0.08)] hover:bg-amber-500/25"
+              : "border-white/[0.12] bg-white/[0.06] text-white/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_3px_rgba(0,0,0,0.4)] hover:bg-white/[0.1] hover:text-white/85",
+          )}
+        >
+          <FlaskConical
+            className={cn(
+              "h-3.5 w-3.5 transition-transform",
+              testMode && "text-amber-300",
+            )}
+          />
+          <span className="hidden sm:inline">Test Mode</span>
+          <span
+            className={cn(
+              "rounded-md px-1.5 py-0.5 text-[9px] font-extrabold tracking-widest",
+              testMode
+                ? "bg-amber-400/25 text-amber-100"
+                : "bg-white/8 text-white/50",
+            )}
+          >
+            {testMode ? "ON" : "OFF"}
+          </span>
+        </button>
+
         {isConnected && (
           <div className="hidden items-center gap-2.5 sm:flex">
             {/* KEY Balance badge */}
@@ -175,6 +203,27 @@ export function Navbar() {
                     +2.14%
                   </span>
                 </div>
+              </div>
+            </div>
+
+            {/* User progression badge */}
+            <div className="flex h-10 items-center gap-3 rounded-xl border border-white/[0.12] bg-white/[0.06] px-3 text-xs shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_3px_rgba(0,0,0,0.4)]">
+              <div className="leading-tight">
+                <p className="text-[9px] uppercase tracking-wider text-white/35">
+                  Level
+                </p>
+                <p className="font-bold tabular-nums text-white">
+                  {userStats.level}
+                </p>
+              </div>
+              <div className="h-5 w-px bg-white/10" />
+              <div className="leading-tight">
+                <p className="text-[9px] uppercase tracking-wider text-white/35">
+                  Streak
+                </p>
+                <p className="font-bold tabular-nums text-amber-200">
+                  {userStats.currentStreak}d
+                </p>
               </div>
             </div>
 

@@ -19,8 +19,11 @@ export function useAnimatedNumber(target: number, duration = 600): number {
     const delta = target - from;
 
     if (Math.abs(delta) < 0.005) {
-      setDisplay(target);
       startRef.current = target;
+      rafRef.current = requestAnimationFrame(() => {
+        setDisplay(target);
+        rafRef.current = null;
+      });
       return;
     }
 

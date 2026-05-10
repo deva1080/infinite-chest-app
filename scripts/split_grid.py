@@ -1,20 +1,19 @@
 """
-Remove background, crop to content bounds, split every image in scripts/nftsv2/
-into a 3x3 grid (9 tiles each), then upscale each tile 2x with waifu2x.
-Output as sequentially numbered transparent .webp files.
+Split every image in scripts/collections/ into a 3x3 grid (9 tiles each),
+then upscale each tile 2x with waifu2x.
+Output as sequentially numbered transparent .webp files in scripts/output/collections/.
 
 Usage:
-    pip install Pillow waifu2x-ncnn-py rembg onnxruntime
+    pip install Pillow waifu2x-ncnn-py
     python scripts/split_grid.py
 """
 
 from pathlib import Path
 from PIL import Image
-from rembg import remove
 from waifu2x_ncnn_py import Waifu2x
 
-IMGS_DIR = Path(__file__).resolve().parent / "nftsv2"
-OUTPUT_DIR = IMGS_DIR / "collections"
+IMGS_DIR = Path(__file__).resolve().parent / "collections"
+OUTPUT_DIR = Path(__file__).resolve().parent / "output" / "collections"
 COLS = 3
 ROWS = 3
 SCALE = 2
@@ -42,21 +41,12 @@ def upscale_pil(upscaler: Waifu2x, img: Image.Image) -> Image.Image:
     return Image.merge("RGBA", (r, g, b, upscaled_alpha))
 
 
-def remove_background_and_crop(img: Image.Image) -> Image.Image:
-    # rembg returns an image with transparent background (RGBA).
-    transparent = remove(img.convert("RGBA")).convert("RGBA")
-    alpha_bbox = transparent.getchannel("A").getbbox()
-    if alpha_bbox is None:
-        return transparent
-    return transparent.crop(alpha_bbox)
-
-
-def split_and_upscale(path: Path, upscaler: Waifu2x, start_index: int) -> int:
+def split_and_upscale(path: Path, upscaler: Waifu2x) -> int:
     img = Image.open(path).convert("RGBA")
-    img = remove_background_and_crop(img)
     w, h = img.size
     tile_w = w // COLS
     tile_h = h // ROWS
+    name = path.stem
 
     count = 0
 
@@ -70,7 +60,7 @@ def split_and_upscale(path: Path, upscaler: Waifu2x, start_index: int) -> int:
             box = (left, top, right, bottom)
             tile = img.crop(box)
             upscaled = upscale_pil(upscaler, tile)
-            out_path = OUTPUT_DIR / f"{start_index + count}.webp"
+            out_path = OUTPUT_DIR / f"{name}_{count}.webp"
             upscaled.save(out_path, "WEBP", lossless=True)
             count += 1
 
@@ -95,7 +85,7 @@ def main() -> None:
     total = 0
     for i, img_path in enumerate(images, 1):
         print(f"[{i}/{len(images)}] {img_path.name}...", end=" ", flush=True)
-        n = split_and_upscale(img_path, upscaler, total)
+        n = split_and_upscale(img_path, upscaler)
         total += n
         print(f"{n} tiles")
 

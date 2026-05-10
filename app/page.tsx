@@ -11,6 +11,8 @@ import {
   type HomeRarityFilter,
   type HomeVolatilityLevel,
 } from "@/components/home/chest-filters-bar";
+
+const ALL_VOLATILITIES = new Set<HomeVolatilityLevel>([1, 2, 3, 4, 5]);
 import {
   type HomeChestCardData,
   type HomeRewardPreview,
@@ -124,8 +126,7 @@ function filterChests(
   chests: HomeChestCardData[],
   rarity: HomeRarityFilter,
   bonus: HomeBonusFilter,
-  volatilityMin: HomeVolatilityLevel,
-  volatilityMax: HomeVolatilityLevel,
+  activeVolatilities: Set<HomeVolatilityLevel>,
 ) {
   return chests.filter((chest) => {
     const matchesBonus =
@@ -134,8 +135,9 @@ function filterChests(
         : bonus === "bonus"
           ? chest.hasBonus
           : !chest.hasBonus;
-    const matchesVolatility =
-      chest.volatility >= volatilityMin && chest.volatility <= volatilityMax;
+    const matchesVolatility = activeVolatilities.has(
+      chest.volatility as HomeVolatilityLevel,
+    );
     const matchesRarity = rarity === "all" ? true : chest.rarity === rarity;
 
     return matchesBonus && matchesVolatility && matchesRarity;
@@ -146,27 +148,24 @@ export default function Home() {
   const { isConnected } = useAccount();
   const [rarity, setRarity] = useState<HomeRarityFilter>("all");
   const [bonus, setBonus] = useState<HomeBonusFilter>("all");
-  const [volatilityMin, setVolatilityMin] = useState<HomeVolatilityLevel>(1);
-  const [volatilityMax, setVolatilityMax] = useState<HomeVolatilityLevel>(5);
+  const [activeVolatilities, setActiveVolatilities] =
+    useState<Set<HomeVolatilityLevel>>(ALL_VOLATILITIES);
 
   const homeChests = useMemo(() => buildChestData(), []);
   const featuredChest = useMemo(() => sortChests(homeChests)[0], [homeChests]);
+  const hasActiveFilters =
+    rarity !== "all" || bonus !== "all" || activeVolatilities.size < 5;
+
   const visibleChests = useMemo(() => {
-    const filtered = filterChests(
-      homeChests,
-      rarity,
-      bonus,
-      volatilityMin,
-      volatilityMax,
-    );
+    const filtered = filterChests(homeChests, rarity, bonus, activeVolatilities);
     const sorted = sortChests(filtered);
 
-    if (featuredChest && sorted.length > 1) {
+    if (!hasActiveFilters && featuredChest && sorted.length > 1) {
       return sorted.filter((chest) => chest.configId !== featuredChest.configId);
     }
 
     return sorted;
-  }, [bonus, featuredChest, homeChests, rarity, volatilityMax, volatilityMin]);
+  }, [bonus, featuredChest, hasActiveFilters, homeChests, rarity, activeVolatilities]);
 
   if (!featuredChest) {
     return <p className="text-sm text-white/75">No hay cofres configurados aun.</p>;
@@ -190,14 +189,20 @@ export default function Home() {
       <ChestFiltersBar
         rarity={rarity}
         bonus={bonus}
-        volatilityMin={volatilityMin}
-        volatilityMax={volatilityMax}
+        activeVolatilities={activeVolatilities}
         resultCount={visibleChests.length}
         onRarityChange={setRarity}
         onBonusChange={setBonus}
-        onVolatilityChange={(min, max) => {
-          setVolatilityMin(min);
-          setVolatilityMax(max);
+        onVolatilityToggle={(level) => {
+          setActiveVolatilities((prev) => {
+            const next = new Set(prev);
+            if (next.has(level)) {
+              if (next.size > 1) next.delete(level);
+            } else {
+              next.add(level);
+            }
+            return next;
+          });
         }}
       />
 

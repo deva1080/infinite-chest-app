@@ -3,6 +3,11 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "owner_",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
         "name": "treasury_",
         "type": "address"
       },
@@ -408,6 +413,25 @@
         "internalType": "struct Shop.ShopConfig",
         "name": "",
         "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "tokenIds",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "getTokenPrices",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "prices",
+        "type": "uint256[]"
       }
     ],
     "stateMutability": "view",

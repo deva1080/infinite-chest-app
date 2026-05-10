@@ -2,6 +2,8 @@
 pragma solidity 0.8.28;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {ChestMechanics} from "./mechanics/ChestMechanics.sol";
 
 interface IERC1155Mintable {
@@ -49,12 +51,26 @@ interface IUserStats {
     function getReferrer(address user) external view returns (address);
 }
 
+interface IQuestController {
+    function onChestAction(
+        address user,
+        uint32 configId,
+        uint32 paidOpens,
+        uint32 bonusOpens,
+        uint256 keySpent,
+        bool isBatch
+    ) external;
+}
+
 //add multi open feature
 
-contract InfiniteChest is Ownable, ChestMechanics {
+contract InfiniteChest is Ownable, EIP712, ChestMechanics {
+    using ECDSA for bytes32;
     uint16 internal constant BP_VALUE = 10_000;
     uint256 public constant BONUS_ID_BASE = 10_000_000_000;
     uint32 public constant BONUS_ID_COUNT = 25;
+    bytes32 internal constant CREATE_SESSION_TYPEHASH =
+        keccak256("CreateSession(address user,uint256 maxOpens,uint64 validUntil,uint256 nonce)");
     uint32 public maxResultsPerConfig = 25;
     uint32 public maxBatch = 50;
     uint32 public maxTotalRollsPerTx = 500;
@@ -73,17 +89,26 @@ contract InfiniteChest is Ownable, ChestMechanics {
         uint64[] multipliers;
         uint256[] tokenIds;
     }
+    struct Session {
+        address user;
+        uint256 maxOpens;
+        uint256 usedOpens;
+        uint64 validUntil;
+        bool active;
+    }
 
     address public treasury;
     address public itemsContract;
     address public shop;
     address public userStats;
+    address public questController;
     uint32 public configCount;
     mapping(address => uint256) public nonce;
     mapping(address => bool) public permittedCallers;
     mapping(uint256 => uint32) public bonusOpensByTokenId;
-    // TODO: Add session-based user authorization for delegated opens (EIP-712 style),
-    // including validUntil and maxAmount limits to avoid requiring a signature per tx.
+    mapping(address => uint256) public sigNonces;
+    mapping(uint256 => Session) public sessions;
+    uint256 public nextSessionId;
 
     mapping(uint32 => ChestConfig) private _configs;
 
@@ -99,9 +124,12 @@ contract InfiniteChest is Ownable, ChestMechanics {
     event ConfigUpdated(uint32 indexed configId, address indexed token, uint256 price);
     event BonusOpensSet(uint256 indexed tokenId, uint32 opens);
     event ExternalContractsSet(address indexed treasury, address indexed itemsContract, address indexed shop, address userStats);
+    event QuestControllerSet(address indexed previousQuestController, address indexed newQuestController);
     event MaxBatchSet(uint32 previousValue, uint32 newValue);
     event MaxTotalRollsPerTxSet(uint32 previousValue, uint32 newValue);
     event MaxResultsPerConfigSet(uint32 previousValue, uint32 newValue);
+    event SessionCreated(uint256 indexed sessionId, address indexed user, uint256 maxOpens, uint64 validUntil);
+    event SessionRevoked(uint256 indexed sessionId, address indexed user);
     event ChestOpened(
         address indexed caller,
         address indexed user,
@@ -125,7 +153,7 @@ contract InfiniteChest is Ownable, ChestMechanics {
         uint256[] rolledIndexes
     );
 
-    constructor(address treasury_, address itemsContract_, address shop_, address userStats_) Ownable(msg.sender) {
+    constructor(address owner_, address treasury_, address itemsContract_, address shop_, address userStats_) Ownable(owner_) EIP712("InfiniteChest", "1") {
         treasury = treasury_;
         itemsContract = itemsContract_;
         shop = shop_;
@@ -181,6 +209,12 @@ contract InfiniteChest is Ownable, ChestMechanics {
         emit MaxBatchSet(previousValue, newMaxBatch);
     }
 
+    function setQuestController(address questController_) external onlyOwner {
+        address previousQuestController = questController;
+        questController = questController_;
+        emit QuestControllerSet(previousQuestController, questController_);
+    }
+
     function setMaxResultsPerConfig(uint32 newMaxResultsPerConfig) external onlyOwner {
         require(newMaxResultsPerConfig > 0, "InfiniteChest: invalid max results");
         uint32 previousValue = maxResultsPerConfig;
@@ -198,6 +232,41 @@ contract InfiniteChest is Ownable, ChestMechanics {
     function setBonusOpens(uint256 tokenId, uint32 opens) external onlyOwner {
         bonusOpensByTokenId[tokenId] = opens;
         emit BonusOpensSet(tokenId, opens);
+    }
+
+    function createSession(
+        address user,
+        uint256 maxOpens,
+        uint64 validUntil,
+        bytes calldata signature
+    ) external onlyPermittedOrOwner returns (uint256 sessionId) {
+        require(user != address(0), "InfiniteChest: invalid user");
+        require(maxOpens > 0, "InfiniteChest: invalid maxOpens");
+
+        _verifySessionSignature(user, maxOpens, validUntil, signature);
+
+        sessionId = nextSessionId++;
+        sessions[sessionId] = Session({
+            user: user,
+            maxOpens: maxOpens,
+            usedOpens: 0,
+            validUntil: validUntil,
+            active: true
+        });
+
+        emit SessionCreated(sessionId, user, maxOpens, validUntil);
+    }
+
+    function revokeSession(uint256 sessionId) external {
+        Session storage session = sessions[sessionId];
+        require(session.active, "InfiniteChest: session inactive");
+        require(
+            session.user == msg.sender || msg.sender == owner(),
+            "InfiniteChest: not authorized"
+        );
+
+        session.active = false;
+        emit SessionRevoked(sessionId, session.user);
     }
 
     function addConfig(
@@ -287,6 +356,45 @@ contract InfiniteChest is Ownable, ChestMechanics {
         rolledIndexes = _openBatch(configId, userAddress, amount, autoSell);
     }
 
+    // --- Session-based open functions ---
+
+    function openWithSession(
+        uint32 configId,
+        uint256 sessionId
+    ) external onlyPermittedOrOwner returns (uint256 rolledIndex) {
+        address user = _consumeSessionOpens(sessionId, 1);
+        rolledIndex = _open(configId, user);
+    }
+
+    function openAndSetReferrerWithSession(
+        uint32 configId,
+        uint256 sessionId,
+        address referrer
+    ) external onlyPermittedOrOwner returns (uint256 rolledIndex) {
+        address user = _consumeSessionOpens(sessionId, 1);
+        _setReferrerIfNeeded(user, referrer);
+        rolledIndex = _open(configId, user);
+    }
+
+    function openBatchWithSession(
+        uint32 configId,
+        uint256 sessionId,
+        uint32 amount
+    ) external onlyPermittedOrOwner returns (uint256[] memory rolledIndexes) {
+        address user = _consumeSessionOpens(sessionId, amount);
+        rolledIndexes = _openBatch(configId, user, amount, false);
+    }
+
+    function openBatchWithSession(
+        uint32 configId,
+        uint256 sessionId,
+        uint32 amount,
+        bool autoSell
+    ) external onlyPermittedOrOwner returns (uint256[] memory rolledIndexes) {
+        address user = _consumeSessionOpens(sessionId, amount);
+        rolledIndexes = _openBatch(configId, user, amount, autoSell);
+    }
+
     function _open(uint32 configId, address userAddress) internal returns (uint256 rolledIndex) {
         require(userAddress != address(0), "InfiniteChest: invalid user");
         ChestConfig storage config = _configs[configId];
@@ -312,6 +420,9 @@ contract InfiniteChest is Ownable, ChestMechanics {
 
         IERC1155Mintable(itemsContract).mint(userAddress, resultTokenId, 1);
         IUserStats(userStats).recordOpen(userAddress, config.price);
+        if (questController != address(0)) {
+            IQuestController(questController).onChestAction(userAddress, configId, 1, 0, config.price, false);
+        }
 
         emit ChestOpened(
             msg.sender,
@@ -390,6 +501,16 @@ contract InfiniteChest is Ownable, ChestMechanics {
             IERC1155Mintable(itemsContract).mintBatch(userAddress, mintIds, mintAmounts);
         }
         IUserStats(userStats).recordOpenBatch(userAddress, totalRolls, totalPrice);
+        if (questController != address(0)) {
+            IQuestController(questController).onChestAction(
+                userAddress,
+                configId,
+                amount,
+                bonusOpens,
+                totalPrice,
+                true
+            );
+        }
 
         emit ChestBatchOpened(
             msg.sender,
@@ -405,6 +526,31 @@ contract InfiniteChest is Ownable, ChestMechanics {
         );
     }
 
+    function _consumeSessionOpens(uint256 sessionId, uint256 opensNeeded) internal returns (address) {
+        Session storage session = sessions[sessionId];
+        require(session.active, "InfiniteChest: session inactive");
+        require(block.timestamp <= session.validUntil, "InfiniteChest: session expired");
+        require(session.usedOpens + opensNeeded <= session.maxOpens, "InfiniteChest: session opens exceeded");
+        session.usedOpens += opensNeeded;
+        return session.user;
+    }
+
+    function _verifySessionSignature(
+        address user,
+        uint256 maxOpens,
+        uint64 validUntil,
+        bytes calldata signature
+    ) internal {
+        require(validUntil > block.timestamp, "InfiniteChest: invalid validUntil");
+
+        uint256 currentNonce = sigNonces[user];
+        bytes32 structHash = keccak256(abi.encode(CREATE_SESSION_TYPEHASH, user, maxOpens, validUntil, currentNonce));
+        bytes32 digest = _hashTypedDataV4(structHash);
+        address signer = digest.recover(signature);
+        require(signer == user, "InfiniteChest: invalid signature");
+        sigNonces[user] = currentNonce + 1;
+    }
+
     function _setReferrerIfNeeded(address userAddress, address referrer) internal {
         require(userAddress != address(0), "InfiniteChest: invalid user");
         require(referrer != address(0), "InfiniteChest: invalid referrer");
@@ -418,6 +564,13 @@ contract InfiniteChest is Ownable, ChestMechanics {
 
     function getConfig(uint32 configId) external view returns (ChestConfig memory) {
         return _configs[configId];
+    }
+
+    function getConfigs(uint32[] calldata configIds) external view returns (ChestConfig[] memory configs) {
+        configs = new ChestConfig[](configIds.length);
+        for (uint256 i = 0; i < configIds.length; i++) {
+            configs[i] = _configs[configIds[i]];
+        }
     }
 
     function _createConfig(

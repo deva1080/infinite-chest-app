@@ -3,6 +3,11 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "owner_",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
         "name": "treasury_",
         "type": "address"
       },
@@ -26,6 +31,38 @@
     "type": "constructor"
   },
   {
+    "inputs": [],
+    "name": "ECDSAInvalidSignature",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "length",
+        "type": "uint256"
+      }
+    ],
+    "name": "ECDSAInvalidSignatureLength",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "s",
+        "type": "bytes32"
+      }
+    ],
+    "name": "ECDSAInvalidSignatureS",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidShortString",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -45,6 +82,17 @@
       }
     ],
     "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "str",
+        "type": "string"
+      }
+    ],
+    "name": "StringTooLong",
     "type": "error"
   },
   {
@@ -240,6 +288,12 @@
   },
   {
     "anonymous": false,
+    "inputs": [],
+    "name": "EIP712DomainChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
     "inputs": [
       {
         "indexed": true,
@@ -368,6 +422,25 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousQuestController",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newQuestController",
+        "type": "address"
+      }
+    ],
+    "name": "QuestControllerSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": false,
         "internalType": "uint16",
         "name": "previousBps",
@@ -412,6 +485,56 @@
       }
     ],
     "name": "ReferrerRewardPaid",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "sessionId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "maxOpens",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "validUntil",
+        "type": "uint64"
+      }
+    ],
+    "name": "SessionCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "sessionId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "SessionRevoked",
     "type": "event"
   },
   {
@@ -560,6 +683,83 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxOpens",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint64",
+        "name": "validUntil",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bytes",
+        "name": "signature",
+        "type": "bytes"
+      }
+    ],
+    "name": "createSession",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "sessionId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "eip712Domain",
+    "outputs": [
+      {
+        "internalType": "bytes1",
+        "name": "fields",
+        "type": "bytes1"
+      },
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "version",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "chainId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "verifyingContract",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "salt",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "extensions",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint32",
         "name": "configId",
         "type": "uint32"
@@ -598,6 +798,52 @@
         "internalType": "struct InfiniteChest.ChestConfig",
         "name": "",
         "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32[]",
+        "name": "configIds",
+        "type": "uint32[]"
+      }
+    ],
+    "name": "getConfigs",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "price",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint72[]",
+            "name": "weightRanges",
+            "type": "uint72[]"
+          },
+          {
+            "internalType": "uint64[]",
+            "name": "multipliers",
+            "type": "uint64[]"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "tokenIds",
+            "type": "uint256[]"
+          }
+        ],
+        "internalType": "struct InfiniteChest.ChestConfig[]",
+        "name": "configs",
+        "type": "tuple[]"
       }
     ],
     "stateMutability": "view",
@@ -650,6 +896,19 @@
         "internalType": "uint32",
         "name": "",
         "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "nextSessionId",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -778,6 +1037,35 @@
         "type": "uint32"
       },
       {
+        "internalType": "uint256",
+        "name": "sessionId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "referrer",
+        "type": "address"
+      }
+    ],
+    "name": "openAndSetReferrerWithSession",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "rolledIndex",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "configId",
+        "type": "uint32"
+      },
+      {
         "internalType": "address",
         "name": "userAddress",
         "type": "address"
@@ -834,6 +1122,93 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "configId",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "sessionId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint32",
+        "name": "amount",
+        "type": "uint32"
+      },
+      {
+        "internalType": "bool",
+        "name": "autoSell",
+        "type": "bool"
+      }
+    ],
+    "name": "openBatchWithSession",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "rolledIndexes",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "configId",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "sessionId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint32",
+        "name": "amount",
+        "type": "uint32"
+      }
+    ],
+    "name": "openBatchWithSession",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "rolledIndexes",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "configId",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "sessionId",
+        "type": "uint256"
+      }
+    ],
+    "name": "openWithSession",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "rolledIndex",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "owner",
     "outputs": [
@@ -867,9 +1242,74 @@
   },
   {
     "inputs": [],
+    "name": "questController",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "renounceOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "sessionId",
+        "type": "uint256"
+      }
+    ],
+    "name": "revokeSession",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "sessions",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxOpens",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "usedOpens",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint64",
+        "name": "validUntil",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bool",
+        "name": "active",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -978,6 +1418,19 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "questController_",
+        "type": "address"
+      }
+    ],
+    "name": "setQuestController",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint16",
         "name": "newBps",
         "type": "uint16"
@@ -996,6 +1449,25 @@
         "internalType": "address",
         "name": "",
         "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "sigNonces",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",

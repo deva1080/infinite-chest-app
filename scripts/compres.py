@@ -1,7 +1,7 @@
 """
-Optimize NFT images generated in scripts/nftsv2/collections.
+Optimize NFT images generated in scripts/output/collections.
 
-By default, writes compressed .webp files to scripts/nftsv2/collections_optimized.
+By default, writes compressed .webp files to scripts/output/collections_optimized.
 
 Usage:
     python scripts/compres.py
@@ -17,9 +17,9 @@ from pathlib import Path
 
 from PIL import Image
 
-NFTS_DIR = Path(__file__).resolve().parent / "nftsv2"
-INPUT_DIR = NFTS_DIR / "collections"
-OUTPUT_DIR = NFTS_DIR / "collections_optimized"
+OUTPUT_BASE = Path(__file__).resolve().parent / "output"
+INPUT_DIR = OUTPUT_BASE / "collections"
+OUTPUT_DIR = OUTPUT_BASE / "collections_optimized"
 SUPPORTED = {".webp", ".png", ".jpg", ".jpeg"}
 
 
@@ -41,7 +41,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--in-place",
         action="store_true",
-        help="Overwrite files in scripts/nftsv2/collections.",
+        help="Overwrite files in scripts/output/collections.",
     )
     return parser.parse_args()
 

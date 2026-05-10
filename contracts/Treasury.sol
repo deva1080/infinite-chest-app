@@ -35,9 +35,9 @@ contract Treasury is Ownable {
         _;
     }
 
-    constructor() Ownable(msg.sender) {
-        permittedAddress[msg.sender] = true;
-        emit PermittedAddressSet(msg.sender, true);
+    constructor(address owner_) Ownable(owner_) {
+        permittedAddress[owner_] = true;
+        emit PermittedAddressSet(owner_, true);
     }
 
     function setPermittedAddress(address account, bool allowed) external onlyOwner {

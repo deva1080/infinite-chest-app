@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import {
   useAccount,
   useReadContract,
-  useReadContracts,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
@@ -22,9 +21,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { getContractConfig, contractAddresses } from "@/lib/contracts";
 import { formatKeys } from "@/lib/format";
+import { useNftInventory } from "@/lib/hooks/use-nft-inventory";
+import { useAppStore } from "@/lib/store/app-store";
 
 export default function ShopPage() {
   const { address, isConnected } = useAccount();
+  const bumpInventoryNonce = useAppStore((s) => s.bumpInventoryNonce);
 
   const [sellTokenId, setSellTokenId] = useState("");
   const [sellAmount, setSellAmount] = useState("1");
@@ -32,50 +34,23 @@ export default function ShopPage() {
 
   const shopConfig = getContractConfig("Shop");
   const itemsConfig = getContractConfig("CrateGameItems");
+  const { ownedIds: ownedIdsList, balanceMap, refetchInventory } =
+    useNftInventory(address);
 
-  // --- NFT inventory ---
-  const { data: ownedIds, refetch: refetchInventory } = useReadContract({
-    ...itemsConfig,
-    functionName: "ownedIds",
-    args: address ? [address] : undefined,
-    query: {
-      enabled: Boolean(address),
-      staleTime: 20_000,
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  });
-
-  const ownedIdsList = (ownedIds as bigint[]) ?? [];
-
-  const { data: nftBalances } = useReadContracts({
-    contracts: ownedIdsList.map((id) => ({
-      ...itemsConfig,
-      functionName: "balanceOf" as const,
-      args: [address!, id],
-    })),
-    query: {
-      enabled: Boolean(address) && ownedIdsList.length > 0,
-      staleTime: 20_000,
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  });
-
-  // --- Sell prices ---
-  const { data: sellPrices } = useReadContracts({
-    contracts: ownedIdsList.map((id) => ({
-      ...shopConfig,
-      functionName: "tokenPrice" as const,
-      args: [id],
-    })),
+  // --- Sell prices (single batch call) ---
+  const { data: sellPricesData } = useReadContract({
+    ...shopConfig,
+    functionName: "getTokenPrices",
+    args: ownedIdsList.length > 0 ? [ownedIdsList] : undefined,
     query: {
       enabled: ownedIdsList.length > 0,
       staleTime: 60_000,
-      retry: 1,
-      refetchOnWindowFocus: false,
+      retry: 3,
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
+      refetchOnWindowFocus: true,
     },
   });
+  const sellPrices = sellPricesData as bigint[] | undefined;
 
   // --- Shop approval ---
   const { data: isShopApproved, refetch: refetchShopApproval } =
@@ -146,7 +121,8 @@ export default function ShopPage() {
       toast.success("Venta realizada!");
       setSellTokenId("");
       setSellAmount("1");
-      refetchInventory();
+      await refetchInventory();
+      bumpInventoryNonce();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Error al vender");
     }
@@ -182,8 +158,8 @@ export default function ShopPage() {
             ) : (
               <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {ownedIdsList.map((id, idx) => {
-                  const bal = nftBalances?.[idx]?.result;
-                  const price = sellPrices?.[idx]?.result;
+                  const bal = balanceMap.get(id.toString());
+                  const price = sellPrices?.[idx];
                   return (
                     <Card key={id.toString()}>
                       <CardContent className="flex flex-col gap-2 pt-4">
@@ -197,7 +173,7 @@ export default function ShopPage() {
                         </div>
                         <p className="text-xs text-muted-foreground">
                           Sell price:{" "}
-                          {price ? formatKeys(price as bigint) : "-"} KEY
+                          {price ? formatKeys(price) : "-"} KEY
                         </p>
                         <Button
                           size="sm"

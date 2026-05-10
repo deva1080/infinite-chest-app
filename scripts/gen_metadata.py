@@ -1,8 +1,8 @@
 """
-Generate a JSON metadata file for each .webp in scripts/nftsv2/collections/.
+Generate a JSON metadata file for each .webp in scripts/output/collections/.
 Each file: { "name": "<id>", "image": "https://radiant-tanuki-62e7ba.netlify.app/collections/<id>.webp" }
 
-Output: scripts/nftsv2/metadata/<hex-id>.json
+Output: scripts/output/metadata/<hex-id>.json
 
 Usage:
     python scripts/gen_metadata.py
@@ -11,10 +11,15 @@ Usage:
 import json
 from pathlib import Path
 
-NFTS_DIR = Path(__file__).resolve().parent / "nftsv2"
-COLLECTIONS_DIR = NFTS_DIR / "collections"
-OUTPUT_DIR = NFTS_DIR / "metadata"
+OUTPUT_BASE = Path(__file__).resolve().parent / "output"
+COLLECTIONS_DIR = OUTPUT_BASE / "collections"
+OUTPUT_DIR = OUTPUT_BASE / "metadata"
 BASE_URL = "https://radiant-tanuki-62e7ba.netlify.app/collections"
+
+
+def sort_key(f: Path) -> tuple[int, int]:
+    parts = f.stem.split("_", 1)
+    return (int(parts[0]), int(parts[1])) if len(parts) == 2 else (int(parts[0]), 0)
 
 
 def main() -> None:
@@ -22,23 +27,22 @@ def main() -> None:
 
     files = sorted(
         (f for f in COLLECTIONS_DIR.iterdir() if f.is_file() and f.suffix == ".webp"),
-        key=lambda f: int(f.stem),
+        key=sort_key,
     )
 
     if not files:
         print("No .webp files found in", COLLECTIONS_DIR)
         return
 
-    for f in files:
-        nft_id = f.stem
-        hex_name = hex(int(nft_id))[2:].zfill(64)
+    for nft_id, f in enumerate(files, 1):
+        hex_name = hex(nft_id)[2:].zfill(64)
         metadata = {
-            "name": nft_id,
-            "image": f"{BASE_URL}/{nft_id}.webp",
+            "name": str(nft_id),
+            "image": f"{BASE_URL}/{f.stem}.webp",
         }
         out_path = OUTPUT_DIR / f"{hex_name}.json"
         out_path.write_text(json.dumps(metadata, indent=2))
-        print(f"  {hex_name}.json")
+        print(f"  {hex_name}.json  ({f.name})")
 
     print(f"\nDone: {len(files)} metadata files -> {OUTPUT_DIR}")
 
